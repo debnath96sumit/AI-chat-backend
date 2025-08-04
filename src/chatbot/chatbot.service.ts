@@ -48,15 +48,17 @@ export class ChatbotService {
             }
           }
 
+          subscriber.next({ data: '__END__' } as MessageEvent);
+
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
           subscriber.complete();
         } catch (err) {
           subscriber.error(err);
         }
       })();
 
-      // Teardown logic (optional)
       return () => {
-        // You can clean up resources here if needed
         console.log('SSE stream closed by client.');
       };
     });
