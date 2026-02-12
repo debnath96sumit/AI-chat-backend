@@ -21,5 +21,25 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@modules/*": [
+        "./src/modules/*"
+      ],
+      "@common/*": [
+        "./src/common/*"
+      ],
+      "@auth/*": [
+        "./src/auth/*"
+      ],
+      "@config/*": [
+        "./src/config/*"
+      ],
+      "@helpers/*": [
+        "./src/helpers/*"
+      ],
+      "@media/*": [
+        "./src/media/*"
+      ]
+    }
   }
 }
