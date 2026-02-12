@@ -1,15 +1,10 @@
-import { Controller, Get, Post, Body, Sse, Param } from '@nestjs/common';
+import { Controller, Post, Body, Sse, Param } from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { Observable } from 'rxjs';
 @Controller('chat')
 export class ChatbotController {
-  constructor(private readonly chatbotService: ChatbotService) {}
-
-  @Get()
-  getResponse(): string {
-    return this.chatbotService.getWelcome();
-  }
+  constructor(private readonly chatbotService: ChatbotService) { }
 
   @Post('message')
   async createMessage(

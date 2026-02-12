@@ -10,6 +10,10 @@ async function bootstrap() {
     credentials: true, // allow cookies or Authorization headers
   });
   app.useGlobalPipes(new ValidationPipe());
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, () => {
+    console.log(`Application is running on port ${process.env.PORT}`);
+  });
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Failed to start the application:', err);
+});

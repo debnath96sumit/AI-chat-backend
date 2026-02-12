@@ -7,12 +7,8 @@ export class ChatbotService {
   private readonly client: InferenceClient;
 
   constructor(private readonly config: ConfigService) {
-    const hfToken = this.config.get<string>('HF_TOKEN') ?? '';
+    const hfToken = this.config.getOrThrow<string>('HF_TOKEN');
     this.client = new InferenceClient(hfToken);
-  }
-
-  getWelcome(): string {
-    return 'Welcome to the AI Chatbot!';
   }
 
   async handleAIResponseAtOnce(message: string): Promise<string> {
@@ -63,4 +59,51 @@ export class ChatbotService {
       };
     });
   }
+
+  // streamAiMessage(message: string): Observable<MessageEvent> {
+  //   console.log('Streaming AI response for message:', message);
+
+  //   return new Observable<MessageEvent>((subscriber) => {
+  //     void (async () => {
+  //       try {
+  //         // Dummy AI response (from file/string)
+  //         const data =
+  //           'This is a sample response that simulates an AI-generated text stream. ' +
+  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
+  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
+  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
+  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
+  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
+  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
+  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
+  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
+  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
+  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
+  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
+  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
+  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
+  //           'The text is long enough to properly test the UI updates smoothly as new content arrives.';
+
+  //         // Split response into small chunks (like tokens)
+  //         const chunks = data.match(/.{1,8}/g) || []; // 8 chars per chunk
+
+  //         for (const chunk of chunks) {
+  //           subscriber.next({ data: chunk } as MessageEvent);
+  //           await new Promise((resolve) => setTimeout(resolve, 50)); // delay 50ms per chunk
+  //         }
+
+  //         // End of stream
+  //         subscriber.next({ data: '__END__' } as MessageEvent);
+  //         subscriber.complete();
+  //       } catch (err) {
+  //         subscriber.error(err);
+  //       }
+  //     })();
+
+  //     // Cleanup if stream is closed
+  //     return () => {
+  //       console.log('SSE stream closed by client.');
+  //     };
+  //   });
+  // }
 }
