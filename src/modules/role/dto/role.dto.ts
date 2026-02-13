@@ -9,11 +9,6 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Transform, TransformFnParams } from "class-transformer";
 
 export class RoleListingDto {
-  @ApiProperty({ description: "Role Group", enum: ["backend", "frontend"] })
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }: TransformFnParams) => value?.trim())
-  roleGroup: string;
 
   @ApiProperty({ default: 1 })
   @IsNumber()
@@ -55,16 +50,6 @@ export class SaveRoleDto {
   @IsNotEmpty({ message: "Role is required" })
   role: string;
 
-  @ApiProperty({
-    description: "Role Group",
-    required: true,
-    enum: ["backend", "frontend"],
-  })
-  @IsString()
-  @Transform(({ value }: TransformFnParams) => value?.trim())
-  @IsNotEmpty({ message: "Role Group is required" })
-  roleGroup: string;
-
   @ApiProperty({ description: "Role Display Name", required: true })
   @IsString()
   @Transform(({ value }: TransformFnParams) => value?.trim())
@@ -78,16 +63,6 @@ export class UpdateRoleDto {
   @Transform(({ value }: TransformFnParams) => value?.trim())
   @IsNotEmpty({ message: "Role is required" })
   role: string;
-
-  @ApiProperty({
-    description: "Role Group",
-    required: true,
-    enum: ["backend", "frontend"],
-  })
-  @IsString()
-  @Transform(({ value }: TransformFnParams) => value?.trim())
-  @IsNotEmpty({ message: "Role Group is required" })
-  roleGroup: string;
 
   @ApiProperty({ description: "Role Display Name", required: true })
   @IsString()

@@ -84,7 +84,9 @@ async function bootstrap() {
     );
   }
   await app.listen(process.env.PORT ?? 3000, () => {
-    console.log(`Application is running on port ${process.env.PORT}`);
+    console.log(`Application is running on port http://localhost:${process.env.PORT ?? 3000}`);
+    console.log(`Admin Panel API: http://localhost:${process.env.PORT ?? 3000}/apidoc/v1/admin`);
+    console.log(`User Panel API: http://localhost:${process.env.PORT ?? 3000}/apidoc/v1/user`);
   });
 }
 bootstrap().catch((err) => {

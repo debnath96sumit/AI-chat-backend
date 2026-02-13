@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Exclude } from "class-transformer";
 import { HydratedDocument } from "mongoose";
-const roleGroup = ["backend", "frontend"];
 
 @Schema({ timestamps: true, versionKey: false })
 export class Role {
@@ -10,12 +9,6 @@ export class Role {
 
   @Prop({ type: String, required: true })
   roleDisplayName: string;
-
-  @Prop({ type: String, default: "frontend", enum: roleGroup })
-  roleGroup: string;
-
-  @Prop({ type: String, default: "" })
-  description: string;
 
   @Prop({ type: String, default: "Active", enum: ["Active", "Inactive"] })
   status: string;

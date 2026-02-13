@@ -1,0 +1,14 @@
+[
+    {
+        "role": "super_admin",
+        "roleDisplayName": "Super Admin",
+        "status": "Active",
+        "isDeleted": false
+    },
+    {
+        "role": "user",
+        "roleDisplayName": "User",
+        "status": "Active",
+        "isDeleted": false
+    }
+]
