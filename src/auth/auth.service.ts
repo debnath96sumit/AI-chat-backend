@@ -136,12 +136,12 @@ export class AuthService {
         provider: string,
     ): Promise<any> {
         const userRole = await this.roleRepository.getByField({
-            role: "guest",
+            role: "user",
             isDeleted: false,
         });
 
         if (!userRole) {
-            throw new BadRequestException("Guest role not found");
+            throw new BadRequestException("User role not found");
         }
 
         const user_payload: any = {
