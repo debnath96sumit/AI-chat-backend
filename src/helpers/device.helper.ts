@@ -54,11 +54,13 @@ export class DeviceHelper {
                 deviceToken: deviceToken ?? "",
             };
 
-            if (existingDeviceData) {
+            if (existingDeviceData?._id) {
                 await this.userDeviceRepository.saveOrUpdate(
                     deviceInfo,
-                    existingDeviceData?._id,
+                    existingDeviceData._id,
                 );
+            } else {
+                await this.userDeviceRepository.save(deviceInfo);
             }
         } catch (err) {
             const stackTrace = (err as Error)?.stack

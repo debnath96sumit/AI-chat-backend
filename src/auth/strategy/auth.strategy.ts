@@ -35,9 +35,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
             isLoggedOut: false,
             isDeleted: false,
         });
-        const lastSegment = req.originalUrl.split("/").pop();
 
-        if (tokenData?._id || lastSegment === "logout") {
+        if (tokenData?._id) {
             const { id } = payload;
 
             const user = await this.userRepository.getUserDetailsJwtAuth(id);

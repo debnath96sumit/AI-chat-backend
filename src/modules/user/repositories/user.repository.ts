@@ -99,6 +99,7 @@ export class UserRepository extends BaseRepository<UserDocument> {
                 $project: {
                     isDeleted: 0,
                     updatedAt: 0,
+                    password: 0,
                 },
             },
         ]);

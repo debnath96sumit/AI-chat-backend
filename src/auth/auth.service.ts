@@ -1,5 +1,5 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
-import { SocialSignInDTO } from './dto/auth.dto';
+import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { RefreshJwtDto, SocialSignInDTO, UserSignInDTO } from './dto/auth.dto';
 import { ApiResponse } from '@common/types/api-response.type';
 import { UserRepository } from '@modules/user/repositories/user.repository';
 import { ConfigService } from '@nestjs/config';
@@ -96,6 +96,113 @@ export class AuthService {
         }
     }
 
+    async loginUser(
+        body: UserSignInDTO,
+        req: Request,
+    ): Promise<ApiResponse> {
+        const checkIfExists = await this.userRepository.getByField({ email: body.email, isDeleted: false });
+
+        if (!checkIfExists?._id) throw new BadRequestException("Invalid credentials!");
+
+        if (!checkIfExists.validPassword(body.password)) {
+            throw new BadRequestException("Invalid credentials!");
+        }
+
+        await this.userRepository.updateById(
+            { rememberMe: body.rememberMe },
+            checkIfExists?._id,
+        );
+
+        const { accessToken, refreshToken } = await this.issueTokens(checkIfExists, req);
+        const userDetails = await this.userRepository.getUserDetails({ _id: checkIfExists._id });
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: "User login successful",
+            data: {
+                user: userDetails,
+                accessToken,
+                refreshToken,
+            },
+        };
+    }
+
+    async logoutUser(req: Request): Promise<ApiResponse> {
+        const authHeader = req.headers["authorization"];
+        const token = authHeader && authHeader.split(" ")[1];
+
+        await this.userDeviceRepository.updateByField(
+            {
+                isLoggedOut: true,
+            },
+            {
+                accessToken: token,
+            },
+        );
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: "User logged out successfully",
+        };
+    }
+
+    async refreshToken(body: RefreshJwtDto, req: Request): Promise<ApiResponse> {
+        const authToken = body.accessToken;
+
+        let tokenData = await this.userDeviceRepository.getByField({
+            accessToken: authToken,
+            isLoggedOut: false,
+            isDeleted: false,
+        });
+
+        if (tokenData?._id) {
+            const refreshTokenHash = await hash(
+                body.accessToken.split(".")[2] + body.refreshToken,
+                body.refreshToken,
+            );
+
+            const refreshTokenData = await this.refreshTokenRepository.getByField({
+                hash: refreshTokenHash,
+            });
+            if (!refreshTokenData)
+                throw new BadRequestException("Invalid token!");
+
+            const user = await this.userRepository.getUserDetails({
+                _id: new Types.ObjectId(refreshTokenData.userId),
+                isDeleted: false,
+                status: "Active",
+            });
+            if (!user?._id)
+                throw new BadRequestException("User not found!");
+
+            const expiresDate = new Date(refreshTokenData.createdAt);
+            expiresDate.setSeconds(
+                expiresDate.getSeconds() +
+                (user.rememberMe
+                    ? this.configService.getOrThrow<number>(
+                        "JWT_REFRESH_EXPIRES_IN_REMEMBER",
+                    )
+                    : this.configService.getOrThrow<number>("JWT_REFRESH_EXPIRES_IN")),
+            );
+            if (new Date() > expiresDate) {
+                await this.refreshTokenRepository.delete(refreshTokenData._id);
+                throw new UnauthorizedException("Refresh token expired!");
+            }
+
+            const { accessToken, refreshToken } = await this.issueTokens(user, req);
+
+            return {
+                statusCode: HttpStatus.OK,
+                message: "Refresh token issued successfully",
+                data: { accessToken, refreshToken },
+            };
+        } else {
+            throw new UnauthorizedException(
+                "Token has been invalidated. Please log in again.",
+            );
+        }
+    }
+
     private async verifyGoogleToken(idToken: string): Promise<OathUserPayload> {
         try {
             const ticket = await this.client.verifyIdToken({
@@ -166,7 +273,6 @@ export class AuthService {
 
     async issueTokens(user: any, req: Request, deviceToken?: string) {
         const payload = { id: user._id, role: user.role };
-
         const accessToken = this.jwtService.sign(payload, {
             secret: this.configService.getOrThrow("JWT_SECRET"),
             expiresIn: this.configService.getOrThrow("JWT_ACCESS_EXPIRES_IN"),

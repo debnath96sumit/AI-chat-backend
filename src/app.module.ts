@@ -14,14 +14,14 @@ import { HelpersModule } from '@helpers/helpers.module';
   imports: [
     ApiConfigModule,
     HelpersModule,
-    ChatbotModule,
     AuthModule,
     UserModule,
     UserRepositoryModule,
     UserDeviceRepositoryModule,
     RoleModule,
     RoleRepositoryModule,
-    RefreshTokenModule
+    RefreshTokenModule,
+    ChatbotModule
   ],
   providers: [],
 })
