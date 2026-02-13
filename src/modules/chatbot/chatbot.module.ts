@@ -5,6 +5,8 @@ import { HttpModule } from '@nestjs/axios';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Chat, ChatSchema } from './schemas/chat.schema';
 import { Message, MessageSchema } from './schemas/message.schema';
+import { ChatRepository } from './repositories/chat.repository';
+import { MessageRepository } from './repositories/message.repository';
 
 @Module({
   imports: [
@@ -15,6 +17,6 @@ import { Message, MessageSchema } from './schemas/message.schema';
     ]),
   ],
   controllers: [ChatbotController],
-  providers: [ChatbotService],
+  providers: [ChatbotService, ChatRepository, MessageRepository],
 })
 export class ChatbotModule { }
