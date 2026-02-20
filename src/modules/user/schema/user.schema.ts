@@ -45,23 +45,6 @@ export class User {
     @Prop({ default: false, type: Boolean })
     usedFreeSubscription: boolean;
 
-    @Prop({ type: Date, default: null })
-    freeSubscriptionActivatedDate: Date;
-
-    @Prop({ type: Date, default: null })
-    freeSubscriptionExpiredDate: Date;
-
-    @Prop({ default: false, type: Boolean })
-    freeSubscriptionExpired: boolean;
-
-    @Prop({
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Subscription",
-        default: null,
-        index: true,
-    })
-    subscriptionId: Types.ObjectId;
-
     @Prop({
         type: String,
         default: "Active",

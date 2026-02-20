@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Req, UseGuards, Version } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RefreshJwtDto, SocialSignInDTO, UserSignInDTO } from './dto/auth.dto';
+import { RefreshJwtDto, SocialSignInDTO, UserSignInDTO, UserSignUpDTO } from './dto/auth.dto';
 import type { Request } from "express";
 import { AuthGuard } from '@nestjs/passport';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -19,6 +19,16 @@ export class AuthController {
     @HttpCode(200)
     async socialSignin(@Body() dto: SocialSignInDTO, @Req() req: Request) {
         return this.authService.socialSignin(dto, req);
+    }
+
+    @Version('1')
+    @Post("register")
+    @UseGuards(ThrottlerGuard)
+    @ApiOperation({ summary: "User registration" })
+    @ApiConsumes("application/json")
+    @HttpCode(200)
+    async registerUser(@Body() dto: UserSignUpDTO, @Req() req: Request) {
+        return this.authService.userSignUp(dto, req);
     }
 
     @Version('1')

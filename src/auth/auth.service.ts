@@ -1,5 +1,5 @@
 import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
-import { RefreshJwtDto, SocialSignInDTO, UserSignInDTO } from './dto/auth.dto';
+import { RefreshJwtDto, SocialSignInDTO, UserSignInDTO, UserSignUpDTO } from './dto/auth.dto';
 import { ApiResponse } from '@common/types/api-response.type';
 import { UserRepository } from '@modules/user/repositories/user.repository';
 import { ConfigService } from '@nestjs/config';
@@ -94,6 +94,51 @@ export class AuthService {
                     error instanceof Error ? error.message : "Authentication failed",
             };
         }
+    }
+
+    async userSignUp(
+        body: UserSignUpDTO,
+        req: Request,
+    ): Promise<ApiResponse> {
+        const userRole = await this.roleRepository.getByField({
+            role: 'user',
+            isDeleted: false,
+        });
+        if (!userRole?._id) throw new BadRequestException("Invalid user role!");
+
+        const isEmailExists = await this.userRepository.getByField({
+            email: { $regex: "^" + body.email + "$", $options: "i" },
+            isDeleted: false,
+        });
+        if (isEmailExists?._id)
+            throw new BadRequestException("User with this email already exists!");
+
+        const isMobileExists = await this.userRepository.getByField({
+            phone: { $regex: "^" + body.phone + "$", $options: "i" },
+            isDeleted: false,
+        });
+        if (isMobileExists?._id)
+            throw new BadRequestException("User with this phone already exists!");
+
+        let user = await this.userRepository.save({
+            ...body,
+            role: userRole._id,
+        });
+
+        const { accessToken, refreshToken } = await this.issueTokens(
+            user,
+            req,
+        );
+
+        return {
+            statusCode: HttpStatus.CREATED,
+            message: "User registered successfully!",
+            data: {
+                user,
+                accessToken,
+                refreshToken,
+            },
+        };
     }
 
     async loginUser(

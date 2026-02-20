@@ -1,11 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform, TransformFnParams } from "class-transformer";
 import {
+    IsEmail,
     IsEnum,
     IsNotEmpty,
     IsOptional,
     IsString,
     Matches,
+    MaxLength,
     MinLength,
 } from "class-validator";
 
@@ -73,4 +75,47 @@ export class RefreshJwtDto {
     @IsString()
     @IsNotEmpty({ message: "Refresh token is required!" })
     refreshToken: string;
+}
+
+export class UserSignUpDTO {
+  @ApiProperty({ description: "Full Name", required: true })
+  @IsString({ message: "Value must be a string" })
+  @Transform(({ value }: TransformFnParams) => value?.trim())
+  @IsNotEmpty({ message: "Full Name is required!" })
+  @MinLength(3, { message: "Full Name must be at least 3 characters long" })
+  @MaxLength(20, { message: "Full Name must be at most 20 characters long" })
+  fullName: string;
+
+  @ApiProperty({ description: "Email", required: true })
+  @IsString({ message: "Value must be a string" })
+  @Transform(
+    ({ value }: TransformFnParams) => value?.trim() && value?.toLowerCase(),
+  )
+  @IsEmail({}, { message: "Please enter a valid email!" })
+  @IsNotEmpty({ message: "Email is required!" })
+  email: string;
+
+  @ApiProperty({ description: "Phone", required: true })
+  @IsString({ message: "Value must be a string" })
+  @Transform(({ value }: TransformFnParams) => value?.trim())
+  @IsNotEmpty({ message: "Phone is required!" })
+  @Matches(/^[0-9]+$/, {
+    message: "Phone number should contain only numeric values",
+  })
+  @MinLength(10, {
+    message: "Phone number must be at least 10 characters long",
+  })
+  @MaxLength(15, { message: "Phone number must be at most 15 characters long" })
+  phone: string;
+
+  @ApiProperty({ description: "Password", required: true })
+  @IsString({ message: "Value must be a string" })
+  @Transform(({ value }: TransformFnParams) => value?.trim())
+  @IsNotEmpty({ message: "Password is required!" })
+  @MinLength(8, { message: "Password must be at least 8 characters long" })
+  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+    message:
+      "Password must contain uppercase, lowercase, and number/special character",
+  })
+  password: string;
 }
