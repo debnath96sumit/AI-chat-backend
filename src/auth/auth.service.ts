@@ -1,5 +1,5 @@
-import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
-import { RefreshJwtDto, SocialSignInDTO, UserSignInDTO, UserSignUpDTO } from './dto/auth.dto';
+import { BadRequestException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CustomerEmailVerificationDTO, CustomerResetPasswordDTO, EmailDTO, RefreshJwtDto, SocialSignInDTO, UserSignInDTO, UserSignUpDTO } from './dto/auth.dto';
 import { ApiResponse } from '@common/types/api-response.type';
 import { UserRepository } from '@modules/user/repositories/user.repository';
 import { ConfigService } from '@nestjs/config';
@@ -12,6 +12,9 @@ import { UserDeviceRepository } from '@modules/user-devices/repository/user-devi
 import { genSalt, hash } from 'bcrypt';
 import { RefreshTokenRepository } from '@modules/refresh-token/repository/refresh-token.repository';
 import { Request } from "express";
+import { Redis } from "ioredis";
+import { REDIS_CONNECTION } from "@common/redis/redis.provider";
+import { MailerService } from "@helpers/mailer.helper";
 
 interface OathUserPayload {
     id: string;
@@ -29,6 +32,8 @@ export class AuthService {
     client: OAuth2Client;
 
     constructor(
+        @Inject(REDIS_CONNECTION)
+        private readonly redisHelper: Redis,
         private readonly userRepository: UserRepository,
         private readonly configService: ConfigService,
         private readonly roleRepository: RoleRepository,
@@ -36,6 +41,7 @@ export class AuthService {
         private readonly deviceHelper: DeviceHelper,
         private readonly userDeviceRepository: UserDeviceRepository,
         private readonly refreshTokenRepository: RefreshTokenRepository,
+        private readonly mailerService: MailerService,
     ) {
         this.client = new OAuth2Client(
             this.configService.getOrThrow<string>("GOOGLE_CLIENT_ID"),
@@ -248,6 +254,152 @@ export class AuthService {
         }
     }
 
+    async forgotPassword(body: EmailDTO): Promise<ApiResponse> {
+        const user = await this.userRepository.getUserDetails({
+            email: { $regex: `^${body.email}$`, $options: "i" },
+            isDeleted: false,
+        });
+
+        if (!user?._id) {
+            throw new BadRequestException("User with this email does not exist!");
+        }
+
+        const rateLimitKey = `forgot_password_limit:${body.email}`;
+        const rateLimitCount = await this.redisHelper.get(rateLimitKey);
+
+        if (rateLimitCount && parseInt(rateLimitCount) >= 3) {
+            return {
+                statusCode: HttpStatus.TOO_MANY_REQUESTS,
+                message: "Too many requests. Please try again after 15 minutes.",
+            };
+        }
+
+        const codeKey = `forgot_password_code:${body.email}`;
+        const codeTimeKey = `forgot_password_time:${body.email}`;
+
+        const lastRequestTime = await this.redisHelper.get(codeTimeKey);
+        if (lastRequestTime && Date.now() - parseInt(lastRequestTime) < 60_000) {
+            return {
+                statusCode: HttpStatus.BAD_REQUEST,
+                message:
+                    "Please wait at least 1 minute before requesting a new code.",
+            };
+        }
+
+        const verificationCode = Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
+
+        await this.redisHelper.set(
+            codeKey,
+            verificationCode.toString(),
+            "EX",
+            300,
+        );
+        await this.redisHelper.set(codeTimeKey, Date.now().toString(), "EX", 300);
+
+        const currentCount = await this.redisHelper.incr(rateLimitKey);
+        if (currentCount === 1) {
+            await this.redisHelper.expire(rateLimitKey, 900); // 15 minutes
+        }
+
+        const locals = {
+            site_logo_url: `${process.env.BACKEND_URL}/images/logo.png`,
+            name: user.fullName,
+            project_name: process.env.PROJECT_NAME || "SwiftLog",
+            code: verificationCode,
+            current_year: new Date().getFullYear(),
+        };
+
+        await this.mailerService.sendMail(
+            body.email,
+            "SwiftLog - Password Reset Verification Code",
+            "forgot-password-email-verification",
+            locals
+        );
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: "A 4-digit verification code has been sent to your email.",
+        };
+
+    }
+
+    async verifyEmail(
+        body: CustomerEmailVerificationDTO
+    ): Promise<ApiResponse> {
+        const email = body.email.toLowerCase().trim();
+
+        const user = await this.userRepository.getUserDetails({
+            email: { $regex: `^${email}$`, $options: "i" },
+            isDeleted: false,
+        });
+
+        if (!user?._id)
+            throw new BadRequestException("User with this email does not exist!");
+
+        const verificationKey = `forgot_password_code:${email}`;
+
+        const storedCode = await this.redisHelper.get(verificationKey);
+
+        if (!storedCode)
+            return {
+                statusCode: HttpStatus.BAD_REQUEST,
+                message: "Verification code expired or not found.",
+            };
+
+        if (storedCode !== body.code)
+            return {
+                statusCode: HttpStatus.BAD_REQUEST,
+                message: "Invalid verification code.",
+            };
+
+        await this.redisHelper.del(verificationKey);
+
+        const verifiedKey = `forgot_password_verified:${email}`;
+        await this.redisHelper.set(verifiedKey, "true", "EX", 600);
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Verification successful. You can now reset your password.",
+        };
+    }
+
+    async resetPassword(
+        body: CustomerResetPasswordDTO,
+    ): Promise<ApiResponse> {
+        const verifiedKey = `forgot_password_verified:${body.email}`;
+        const isVerified = await this.redisHelper.get(verifiedKey);
+
+        if (!isVerified) {
+            return {
+                statusCode: HttpStatus.BAD_REQUEST,
+                message: "Email not verified for password reset or session expired.",
+            };
+        }
+
+        const user = await this.userRepository.getUserDetails({
+            email: { $regex: `^${body.email}$`, $options: "i" },
+            isDeleted: false,
+        });
+
+        if (!user?._id) {
+            return {
+                statusCode: HttpStatus.NOT_FOUND,
+                message: "User not found.",
+            };
+        }
+
+        await this.userRepository.updateById(
+            { password: body.newPassword },
+            user._id,
+        );
+
+        await this.redisHelper.del(verifiedKey);
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Password reset successfully. You can now log in.",
+        };
+    }
     private async verifyGoogleToken(idToken: string): Promise<OathUserPayload> {
         try {
             const ticket = await this.client.verifyIdToken({

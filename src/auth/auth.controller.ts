@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Req, UseGuards, Version } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RefreshJwtDto, SocialSignInDTO, UserSignInDTO, UserSignUpDTO } from './dto/auth.dto';
+import { CustomerEmailVerificationDTO, CustomerResetPasswordDTO, EmailDTO, RefreshJwtDto, SocialSignInDTO, UserSignInDTO, UserSignUpDTO } from './dto/auth.dto';
 import type { Request } from "express";
 import { AuthGuard } from '@nestjs/passport';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -55,5 +55,28 @@ export class AuthController {
     @UseGuards(ThrottlerGuard)
     async refreshToken(@Body() dto: RefreshJwtDto, @Req() req: Request) {
         return this.authService.refreshToken(dto, req);
+    }
+
+    @Version('1')
+    @Post("forgot-password")
+    @ApiConsumes("application/json")
+    async forgotPassword(@Body() dto: EmailDTO) {
+        return await this.authService.forgotPassword(dto);
+    }
+
+    @Version('1')
+    @Post("verify-email")
+    @ApiConsumes("application/json")
+    async verifyEmail(
+        @Body() dto: CustomerEmailVerificationDTO
+    ) {
+        return await this.authService.verifyEmail(dto);
+    }
+
+    @Version('1')
+    @Post("reset-password")
+    @ApiConsumes("application/json")
+    async resetPassword(@Body() dto: CustomerResetPasswordDTO) {
+        return await this.authService.resetPassword(dto);
     }
 }

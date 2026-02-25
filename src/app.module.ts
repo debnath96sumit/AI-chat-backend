@@ -9,11 +9,13 @@ import { RoleModule } from '@modules/role/role.module';
 import { RoleRepositoryModule } from '@modules/role/repositories/role.repository.module';
 import { RefreshTokenModule } from '@modules/refresh-token/refresh-token.module';
 import { HelpersModule } from '@helpers/helpers.module';
+import { RedisModule } from '@common/redis/redis.module';
 
 @Module({
   imports: [
     ApiConfigModule,
     HelpersModule,
+    RedisModule,
     AuthModule,
     UserModule,
     UserRepositoryModule,
