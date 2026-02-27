@@ -15,9 +15,9 @@ import {
 
 export class SocialSignInDTO {
   @ApiProperty({ description: "OAuth Token (ID Token)", required: true })
+  @IsNotEmpty({ message: "OAuth Token is required!" })
   @IsString({ message: "Value must be a string" })
   @Transform(({ value }: TransformFnParams) => value?.trim())
-  @IsNotEmpty({ message: "OAuth Token is required!" })
   oauthToken: string;
 
   @ApiProperty({
@@ -127,8 +127,8 @@ export class EmailDTO {
     example: "john.doe@example.com",
     required: true,
   })
-  @IsEmail({}, { message: "Invalid email format" })
   @IsNotEmpty({ message: "Email is required" })
+  @IsEmail({}, { message: "Invalid email format" })
   @Transform(({ value }: TransformFnParams) => value?.trim()?.toLowerCase())
   email: string;
 }

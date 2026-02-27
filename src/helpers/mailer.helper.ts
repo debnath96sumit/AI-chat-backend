@@ -6,7 +6,7 @@ import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MailerService {
-  private transporter: nodemailer.Transporter;
+  private readonly transporter: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
     this.transporter = nodemailer.createTransport({

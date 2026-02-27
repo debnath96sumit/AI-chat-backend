@@ -304,14 +304,14 @@ export class AuthService {
         const locals = {
             site_logo_url: `${process.env.BACKEND_URL}/images/logo.png`,
             name: user.fullName,
-            project_name: process.env.PROJECT_NAME || "SwiftLog",
+            project_name: process.env.PROJECT_NAME || "AI Chat",
             code: verificationCode,
             current_year: new Date().getFullYear(),
         };
 
         await this.mailerService.sendMail(
             body.email,
-            "SwiftLog - Password Reset Verification Code",
+            "AI Chat - Password Reset Verification Code",
             "forgot-password-email-verification",
             locals
         );
