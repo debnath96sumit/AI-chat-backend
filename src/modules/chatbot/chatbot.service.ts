@@ -117,6 +117,114 @@ export class ChatbotService {
   //   });
   // }
 
+  async createUserMessage(
+    user: AuthenticatedUser,
+    dto: SendMessageDto,
+  ): Promise<{ chatId: string }> {
+
+    let chat;
+
+    if (!dto.chatId) {
+      chat = await this.chatRepository.save({
+        userId: user._id,
+      });
+    } else {
+      chat = await this.chatRepository.getByField({
+        _id: dto.chatId,
+        userId: user._id,
+        isDeleted: false,
+      });
+
+      if (!chat) {
+        throw new NotFoundException('Chat not found');
+      }
+    }
+
+    await this.messageRepository.save({
+      chatId: chat._id,
+      userId: user._id,
+      role: MessageRole.USER,
+      content: dto.message,
+    });
+
+    return { chatId: chat._id };
+  }
+  async streamAssistantResponse(
+    user: AuthenticatedUser,
+    chatId: string,
+  ): Promise<Observable<MessageEvent>> {
+
+    return new Observable<MessageEvent>((subscriber) => {
+      void (async () => {
+        let fullAssistantResponse = '';
+
+        try {
+          const chat = await this.chatRepository.getByField({
+            _id: chatId,
+            userId: user._id,
+            isDeleted: false,
+          });
+
+          if (!chat) {
+            throw new NotFoundException('Chat not found');
+          }
+
+          const history = await this.messageRepository.getMessageHistory(chatId);
+
+          const formattedHistory = history.map((msg: MessageDocument) => ({
+            role: msg.role,
+            content: msg.content,
+          }));
+
+          const stream = this.client.chatCompletionStream({
+            model: 'meta-llama/Llama-3.1-8B-Instruct',
+            messages: formattedHistory,
+          });
+
+          for await (const chunk of stream) {
+            const content = chunk.choices?.[0]?.delta?.content;
+
+            if (content) {
+              fullAssistantResponse += content;
+              subscriber.next({ data: content } as MessageEvent);
+            }
+          }
+
+          // Save assistant message after stream finishes
+          await this.messageRepository.save({
+            chatId: chat._id,
+            userId: user._id,
+            role: MessageRole.ASSISTANT,
+            content: fullAssistantResponse,
+          });
+
+          // Generate title if first message
+          const messages = await this.messageRepository.getAllByField({ chatId });
+          const isFirstMessage = messages.length === 2;
+
+          if (isFirstMessage) {
+            this.generateTitle(messages[0].content)
+              .then((title) => {
+                if (title) {
+                  return this.chatRepository.updateById(
+                    { title: this.cleanTitle(title) },
+                    chatId,
+                  );
+                }
+              })
+              .catch(console.log);
+          }
+
+          subscriber.next({ data: '__END__' } as MessageEvent);
+          subscriber.complete();
+
+        } catch (error) {
+          subscriber.error(error);
+        }
+      })();
+    });
+  }
+
   async handleMessage(
     user: AuthenticatedUser,
     dto: SendMessageDto,
@@ -130,12 +238,12 @@ export class ChatbotService {
         try {
           if (!dto.chatId) {
             chat = await this.chatRepository.save({
-              userId: user.id,
+              userId: user._id,
             });
           } else {
             chat = await this.chatRepository.getByField({
               _id: dto.chatId,
-              userId: user.id,
+              userId: user._id,
               isDeleted: false,
             });
 
@@ -146,7 +254,7 @@ export class ChatbotService {
 
           await this.messageRepository.save({
             chatId: chat._id,
-            userId: user.id,
+            userId: user._id,
             role: MessageRole.USER,
             content: dto.message,
           });
@@ -183,7 +291,7 @@ export class ChatbotService {
 
           await this.messageRepository.save({
             chatId: chat._id,
-            userId: user.id,
+            userId: user._id,
             role: MessageRole.ASSISTANT,
             content: fullAssistantResponse,
           });
@@ -253,7 +361,7 @@ export class ChatbotService {
   ): Promise<ApiResponse> {
     const chat = await this.chatRepository.getByField({
       _id: chatId,
-      userId: user.id,
+      userId: user._id,
       isDeleted: false,
     });
 
@@ -284,7 +392,7 @@ export class ChatbotService {
   ): Promise<ApiResponse> {
     const chat = await this.chatRepository.getByField({
       _id: chatId,
-      userId: user.id,
+      userId: user._id,
       isDeleted: false,
     });
 
@@ -304,7 +412,7 @@ export class ChatbotService {
   async deleteChat(user: AuthenticatedUser, chatId: string): Promise<ApiResponse> {
     const chat = await this.chatRepository.getByField({
       _id: chatId,
-      userId: user.id,
+      userId: user._id,
       isDeleted: false,
     });
 

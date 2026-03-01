@@ -2,14 +2,15 @@ import { Controller, Post, Body, Sse, Param, Version, UseGuards, Get, Patch, Que
 import { ChatbotService } from './chatbot.service';
 import { CreateMessageDto, RenameChatDto, SendMessageDto } from './dto/create-message.dto';
 import { Observable } from 'rxjs';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiExcludeEndpoint, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { LoginUser } from '@common/decorator/login-user.decorator';
 import type { AuthenticatedUser } from '@auth/types/authenticated-user.type';
 import { ApiTags } from '@nestjs/swagger';
+import { SseAuthGuard } from '@auth/guards/sse-auth.guard';
+
 @ApiTags('Chats')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
 @Controller({ path: 'chat', version: '1' })
 export class ChatbotController {
   constructor(private readonly chatbotService: ChatbotService) { }
@@ -28,20 +29,36 @@ export class ChatbotController {
     return this.chatbotService.streamAiMessage(message);
   }
 
+  @Sse('stream/:chatId')
+  @UseGuards(SseAuthGuard)
+  @ApiOperation({ summary: 'Stream assistant response' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiQuery({ 
+    name: 'token', 
+    required: true, 
+    description: 'JWT authentication token',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  })
+  streamChat(
+    @LoginUser() user: AuthenticatedUser,
+    @Param('chatId') chatId: string,
+  ) {
+    return this.chatbotService.streamAssistantResponse(user, chatId);
+  }
+
   @Post('send-message')
-  @ApiOperation({ summary: 'Send message to AI' })
-  @ApiConsumes("application/json")
-  sendMessage(
+  @UseGuards(AuthGuard('jwt'))  
+  @ApiOperation({ summary: 'Send user message' })
+  @ApiConsumes('application/json')
+  async sendMessage(
     @LoginUser() user: AuthenticatedUser,
     @Body() dto: SendMessageDto,
   ) {
-    return this.chatbotService.handleMessage(
-      user,
-      dto
-    );
+    return this.chatbotService.createUserMessage(user, dto);
   }
 
   @Get('get-all')
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get user chats' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
@@ -58,6 +75,7 @@ export class ChatbotController {
   }
 
   @Get(':chatId')
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get chat details with messages' })
   @ApiParam({ name: 'chatId' })
   @ApiQuery({ name: 'page', required: false })
@@ -77,6 +95,7 @@ export class ChatbotController {
   }
 
   @Patch('rename/:chatId')
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Rename chat' })
   renameChat(
     @LoginUser() user: AuthenticatedUser,
@@ -91,6 +110,7 @@ export class ChatbotController {
   }
 
   @Delete('delete/:chatId')
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Delete chat' })
   deleteChat(
     @LoginUser() user: AuthenticatedUser,

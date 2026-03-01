@@ -7,6 +7,7 @@ import { Chat, ChatSchema } from './schemas/chat.schema';
 import { Message, MessageSchema } from './schemas/message.schema';
 import { ChatRepository } from './repositories/chat.repository';
 import { MessageRepository } from './repositories/message.repository';
+import { AuthModule } from '@auth/auth.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MessageRepository } from './repositories/message.repository';
       { name: Chat.name, schema: ChatSchema },
       { name: Message.name, schema: MessageSchema },
     ]),
+    AuthModule
   ],
   controllers: [ChatbotController],
   providers: [ChatbotService, ChatRepository, MessageRepository],
