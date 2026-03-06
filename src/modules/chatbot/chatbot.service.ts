@@ -38,85 +38,6 @@ export class ChatbotService {
     }
   }
 
-  streamAiMessage(message: string): Observable<MessageEvent> {
-    return new Observable<MessageEvent>((subscriber) => {
-      void (async () => {
-        try {
-          const stream = this.client.chatCompletionStream({
-            model: 'meta-llama/Llama-3.1-8B-Instruct',
-            messages: [{ role: 'user', content: message }],
-          });
-
-          for await (const chunk of stream) {
-            const content = chunk.choices?.[0]?.delta?.content;
-            if (content) {
-              subscriber.next({ data: content } as MessageEvent);
-            }
-          }
-
-          subscriber.next({ data: '__END__' } as MessageEvent);
-
-          await new Promise((resolve) => setTimeout(resolve, 100));
-
-          subscriber.complete();
-        } catch (err) {
-          subscriber.error(err);
-        }
-      })();
-
-      return () => {
-        console.log('SSE stream closed by client.');
-      };
-    });
-  }
-
-  // streamAiMessage(message: string): Observable<MessageEvent> {
-  //   console.log('Streaming AI response for message:', message);
-
-  //   return new Observable<MessageEvent>((subscriber) => {
-  //     void (async () => {
-  //       try {
-  //         // Dummy AI response (from file/string)
-  //         const data =
-  //           'This is a sample response that simulates an AI-generated text stream. ' +
-  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
-  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
-  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
-  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
-  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
-  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
-  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
-  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
-  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
-  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
-  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
-  //           'The text is long enough to properly test the UI updates smoothly as new content arrives. This is a sample response that simulates an AI-generated text stream. ' +
-  //           'It contains multiple paragraphs of text that can be used for testing the streaming functionality. ' +
-  //           'The text is long enough to properly test the UI updates smoothly as new content arrives.';
-
-  //         // Split response into small chunks (like tokens)
-  //         const chunks = data.match(/.{1,8}/g) || []; // 8 chars per chunk
-
-  //         for (const chunk of chunks) {
-  //           subscriber.next({ data: chunk } as MessageEvent);
-  //           await new Promise((resolve) => setTimeout(resolve, 50)); // delay 50ms per chunk
-  //         }
-
-  //         // End of stream
-  //         subscriber.next({ data: '__END__' } as MessageEvent);
-  //         subscriber.complete();
-  //       } catch (err) {
-  //         subscriber.error(err);
-  //       }
-  //     })();
-
-  //     // Cleanup if stream is closed
-  //     return () => {
-  //       console.log('SSE stream closed by client.');
-  //     };
-  //   });
-  // }
-
   async createUserMessage(
     user: AuthenticatedUser,
     dto: SendMessageDto,
@@ -169,7 +90,7 @@ export class ChatbotService {
             throw new NotFoundException('Chat not found');
           }
 
-          const history = await this.messageRepository.getMessageHistory(chatId);
+          const history = await this.messageRepository.getMessageHistory(chat._id);
 
           const formattedHistory = history.map((msg: MessageDocument) => ({
             role: msg.role,
@@ -199,20 +120,17 @@ export class ChatbotService {
           });
 
           // Generate title if first message
-          const messages = await this.messageRepository.getAllByField({ chatId });
+          const messages = await this.messageRepository.getAllByField({ chatId: chat._id });
           const isFirstMessage = messages.length === 2;
-
+          
           if (isFirstMessage) {
-            this.generateTitle(messages[0].content)
-              .then((title) => {
-                if (title) {
-                  return this.chatRepository.updateById(
-                    { title: this.cleanTitle(title) },
-                    chatId,
-                  );
-                }
-              })
-              .catch(console.log);
+            const title = await this.generateTitle(messages[0].content);
+            if (title) {
+              await this.chatRepository.updateById(
+                { title: this.cleanTitle(title) },
+                chat._id,
+              );
+            }
           }
 
           subscriber.next({ data: '__END__' } as MessageEvent);
@@ -370,7 +288,7 @@ export class ChatbotService {
     }
 
     const messages = await this.messageRepository.getAllPaginate({
-      filter: { chatId },
+      filter: { chatId: chat._id },
       page,
       limit,
     });

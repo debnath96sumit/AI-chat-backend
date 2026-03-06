@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model, PipelineStage } from "mongoose";
+import { Model, PipelineStage, Types } from "mongoose";
 import { BaseRepository } from "src/common/bases/base.repository";
 import { Message, MessageDocument } from "../schemas/message.schema";
 import { IPaginationOptions } from "@common/interfaces/pagination.interface";
@@ -12,7 +12,7 @@ export class MessageRepository extends BaseRepository<MessageDocument> {
         super(MessageModel);
     }
 
-    async getMessageHistory(chatId: string): Promise<MessageDocument[]> {
+    async getMessageHistory(chatId: Types.ObjectId): Promise<MessageDocument[]> {
         return await this.MessageModel
             .find({ chatId: chatId })
             .sort({ createdAt: 1 })
@@ -27,14 +27,14 @@ export class MessageRepository extends BaseRepository<MessageDocument> {
                 filter = {},
                 page = 1,
                 limit = 20,
-                sort = { createdAt: -1 },
+                sort = { createdAt: 1 },
                 search,
             } = options;
 
             const skip = (page - 1) * limit;
 
             const conditions = {
-                $and: [filter, { isDeleted: false }],
+                $and: [filter],
             };
 
             const countPipeline = [{ $match: conditions }, { $count: "total" }];

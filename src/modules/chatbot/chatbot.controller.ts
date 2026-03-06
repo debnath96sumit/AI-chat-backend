@@ -1,12 +1,10 @@
-import { Controller, Post, Body, Sse, Param, Version, UseGuards, Get, Patch, Query, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Sse, Param, UseGuards, Get, Patch, Query, Delete } from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
 import { CreateMessageDto, RenameChatDto, SendMessageDto } from './dto/create-message.dto';
-import { Observable } from 'rxjs';
-import { ApiBearerAuth, ApiConsumes, ApiExcludeEndpoint, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { LoginUser } from '@common/decorator/login-user.decorator';
 import type { AuthenticatedUser } from '@auth/types/authenticated-user.type';
-import { ApiTags } from '@nestjs/swagger';
 import { SseAuthGuard } from '@auth/guards/sse-auth.guard';
 
 @ApiTags('Chats')
@@ -22,11 +20,6 @@ export class ChatbotController {
     return await this.chatbotService.handleAIResponseAtOnce(
       createMessageDto.message,
     );
-  }
-
-  @Sse('stream/:message')
-  streamMessage(@Param('message') message: string): Observable<MessageEvent> {
-    return this.chatbotService.streamAiMessage(message);
   }
 
   @Sse('stream/:chatId')
