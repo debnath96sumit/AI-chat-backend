@@ -41,13 +41,15 @@ export class ChatbotService {
   async createUserMessage(
     user: AuthenticatedUser,
     dto: SendMessageDto,
-  ): Promise<{ chatId: string }> {
+  ): Promise<ApiResponse> {
 
     let chat;
 
     if (!dto.chatId) {
+      const title = await this.generateTitle(dto.message);
       chat = await this.chatRepository.save({
         userId: user._id,
+        title
       });
     } else {
       chat = await this.chatRepository.getByField({
@@ -68,7 +70,11 @@ export class ChatbotService {
       content: dto.message,
     });
 
-    return { chatId: chat._id };
+    return { 
+      statusCode: HttpStatus.OK,
+      message: 'Message sent successfully',
+      data: { chat }
+    };
   }
   async streamAssistantResponse(
     user: AuthenticatedUser,
@@ -213,26 +219,6 @@ export class ChatbotService {
             role: MessageRole.ASSISTANT,
             content: fullAssistantResponse,
           });
-
-          const messages = await this.messageRepository.getAllByField({
-            chatId: chat._id,
-          });
-
-          const isFirstMessage = messages.length === 2;
-
-          if (isFirstMessage) {
-            this.generateTitle(dto.message)
-              .then((title) => {
-                if (title) {
-                  return this.chatRepository.updateById({
-                    title: this.cleanTitle(title),
-                  }, chat._id);
-                }
-              })
-              .catch((error) => {
-                console.log(error);
-              });
-          }
 
           subscriber.next({
             data: JSON.stringify({

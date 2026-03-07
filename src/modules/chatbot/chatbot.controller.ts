@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Sse, Param, UseGuards, Get, Patch, Query, Delete } from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
-import { CreateMessageDto, RenameChatDto, SendMessageDto } from './dto/create-message.dto';
+import { RenameChatDto, SendMessageDto } from './dto/create-message.dto';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { LoginUser } from '@common/decorator/login-user.decorator';
@@ -12,15 +12,6 @@ import { SseAuthGuard } from '@auth/guards/sse-auth.guard';
 @Controller({ path: 'chat', version: '1' })
 export class ChatbotController {
   constructor(private readonly chatbotService: ChatbotService) { }
-
-  @Post('message')
-  async createMessage(
-    @Body() createMessageDto: CreateMessageDto,
-  ): Promise<string> {
-    return await this.chatbotService.handleAIResponseAtOnce(
-      createMessageDto.message,
-    );
-  }
 
   @Sse('stream/:chatId')
   @UseGuards(SseAuthGuard)
