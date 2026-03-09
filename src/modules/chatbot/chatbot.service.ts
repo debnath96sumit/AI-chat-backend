@@ -46,10 +46,13 @@ export class ChatbotService {
     let chat;
 
     if (!dto.chatId) {
-      const title = await this.generateTitle(dto.message);
+      let title = await this.generateTitle(dto.message);
+      if (!title) {
+        title = 'New Chat';
+      }
       chat = await this.chatRepository.save({
         userId: user._id,
-        title
+        title: this.cleanTitle(title)
       });
     } else {
       chat = await this.chatRepository.getByField({
@@ -70,7 +73,7 @@ export class ChatbotService {
       content: dto.message,
     });
 
-    return { 
+    return {
       statusCode: HttpStatus.OK,
       message: 'Message sent successfully',
       data: { chat }
@@ -124,20 +127,6 @@ export class ChatbotService {
             role: MessageRole.ASSISTANT,
             content: fullAssistantResponse,
           });
-
-          // Generate title if first message
-          const messages = await this.messageRepository.getAllByField({ chatId: chat._id });
-          const isFirstMessage = messages.length === 2;
-          
-          if (isFirstMessage) {
-            const title = await this.generateTitle(messages[0].content);
-            if (title) {
-              await this.chatRepository.updateById(
-                { title: this.cleanTitle(title) },
-                chat._id,
-              );
-            }
-          }
 
           subscriber.next({ data: '__END__' } as MessageEvent);
           subscriber.complete();
@@ -341,7 +330,7 @@ export class ChatbotService {
         {
           role: 'system',
           content:
-            'Generate a short chat title. Max 5 words. No punctuation. No quotes.',
+            'Generate a short chat title from the given user message. Max 5 words. Do not use punctuation. Do not use quotes.',
         },
         {
           role: 'user',
