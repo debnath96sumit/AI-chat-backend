@@ -17,9 +17,9 @@ export class ChatbotController {
   @UseGuards(SseAuthGuard)
   @ApiOperation({ summary: 'Stream assistant response' })
   @ApiParam({ name: 'chatId', description: 'Chat ID' })
-  @ApiQuery({ 
-    name: 'token', 
-    required: true, 
+  @ApiQuery({
+    name: 'token',
+    required: true,
     description: 'JWT authentication token',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
   })
@@ -31,7 +31,7 @@ export class ChatbotController {
   }
 
   @Post('send-message')
-  @UseGuards(AuthGuard('jwt'))  
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Send user message' })
   @ApiConsumes('application/json')
   async sendMessage(
@@ -39,6 +39,12 @@ export class ChatbotController {
     @Body() dto: SendMessageDto,
   ) {
     return this.chatbotService.createUserMessage(user, dto);
+  }
+
+  @Get('llm-models')
+  @ApiOperation({ summary: 'Get available models' })
+  getAvailableModels() {
+    return this.chatbotService.getAvailableModels();
   }
 
   @Get('get-all')

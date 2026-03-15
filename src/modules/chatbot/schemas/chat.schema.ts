@@ -1,3 +1,4 @@
+import * as modelsConstant from '@modules/llm/constants/models.constant';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
@@ -20,6 +21,12 @@ export class Chat {
         trim: true,
     })
     title: string;
+
+    @Prop({ type: String, default: 'groq' })
+    provider: modelsConstant.LLMProviderKey;
+
+    @Prop({ default: 'llama-3.3-70b-versatile' })
+    modelId: string;
 
     @Prop({
         type: Boolean,

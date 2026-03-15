@@ -8,6 +8,8 @@ import { MessageRepository } from './repositories/message.repository';
 import { AuthenticatedUser } from '@auth/types/authenticated-user.type';
 import { RenameChatDto, SendMessageDto } from './dto/create-message.dto';
 import { MessageDocument, MessageRole } from './schemas/message.schema';
+import { LLMService } from '@modules/llm/llm.service';
+import * as modelsConstant from '@modules/llm/constants/models.constant';
 @Injectable()
 export class ChatbotService {
   private readonly client: InferenceClient;
@@ -16,6 +18,7 @@ export class ChatbotService {
     private readonly config: ConfigService,
     private readonly chatRepository: ChatRepository,
     private readonly messageRepository: MessageRepository,
+    private readonly llmService: LLMService,
   ) {
     const hfToken = this.config.getOrThrow<string>('HF_TOKEN');
     this.client = new InferenceClient(hfToken);
@@ -42,17 +45,19 @@ export class ChatbotService {
     user: AuthenticatedUser,
     dto: SendMessageDto,
   ): Promise<ApiResponse> {
+    const { provider, model } = this.llmService.resolve(dto.provider, dto.modelId);
 
     let chat;
 
     if (!dto.chatId) {
-      let title = await this.generateTitle(dto.message);
-      if (!title) {
-        title = 'New Chat';
-      }
+      let title = await this.generateTitle(dto.message, provider, model);
+      if (!title) title = 'New Chat';
+
       chat = await this.chatRepository.save({
         userId: user._id,
-        title: this.cleanTitle(title)
+        title: this.cleanTitle(title),
+        provider,
+        modelId: model,
       });
     } else {
       chat = await this.chatRepository.getByField({
@@ -61,8 +66,13 @@ export class ChatbotService {
         isDeleted: false,
       });
 
-      if (!chat) {
-        throw new NotFoundException('Chat not found');
+      if (!chat) throw new NotFoundException('Chat not found');
+
+      const providerChanged = chat.provider !== provider;
+      const modelChanged = chat.modelId !== model;
+
+      if (providerChanged || modelChanged) {
+        chat = await this.chatRepository.updateById({ provider, modelId: model }, chat._id);
       }
     }
 
@@ -76,14 +86,14 @@ export class ChatbotService {
     return {
       statusCode: HttpStatus.OK,
       message: 'Message sent successfully',
-      data: { chat }
+      data: { chat },
     };
   }
+
   async streamAssistantResponse(
     user: AuthenticatedUser,
     chatId: string,
   ): Promise<Observable<MessageEvent>> {
-
     return new Observable<MessageEvent>((subscriber) => {
       void (async () => {
         let fullAssistantResponse = '';
@@ -95,32 +105,24 @@ export class ChatbotService {
             isDeleted: false,
           });
 
-          if (!chat) {
-            throw new NotFoundException('Chat not found');
-          }
+          if (!chat) throw new NotFoundException('Chat not found');
+
+          const provider = (chat.provider ?? 'groq') as modelsConstant.LLMProviderKey;
+          const modelId = chat.modelId ?? modelsConstant.getDefaultModel(provider);
 
           const history = await this.messageRepository.getMessageHistory(chat._id);
 
           const formattedHistory = history.map((msg: MessageDocument) => ({
-            role: msg.role,
+            role: msg.role as 'user' | 'assistant' | 'system',
             content: msg.content,
           }));
 
-          const stream = this.client.chatCompletionStream({
-            model: 'meta-llama/Llama-3.1-8B-Instruct',
-            messages: formattedHistory,
-          });
-
-          for await (const chunk of stream) {
-            const content = chunk.choices?.[0]?.delta?.content;
-
-            if (content) {
-              fullAssistantResponse += content;
-              subscriber.next({ data: content } as MessageEvent);
-            }
+          for await (const chunk of this.llmService.stream(provider, modelId, formattedHistory)) {
+            fullAssistantResponse += chunk;
+            subscriber.next({ data: chunk } as MessageEvent);
           }
 
-          // Save assistant message after stream finishes
+          // Persist full assistant response
           await this.messageRepository.save({
             chatId: chat._id,
             userId: user._id,
@@ -130,95 +132,6 @@ export class ChatbotService {
 
           subscriber.next({ data: '__END__' } as MessageEvent);
           subscriber.complete();
-
-        } catch (error) {
-          subscriber.error(error);
-        }
-      })();
-    });
-  }
-
-  async handleMessage(
-    user: AuthenticatedUser,
-    dto: SendMessageDto,
-  ): Promise<Observable<MessageEvent>> {
-
-    return new Observable<MessageEvent>((subscriber) => {
-      void (async () => {
-        let chat;
-        let fullAssistantResponse = '';
-
-        try {
-          if (!dto.chatId) {
-            chat = await this.chatRepository.save({
-              userId: user._id,
-            });
-          } else {
-            chat = await this.chatRepository.getByField({
-              _id: dto.chatId,
-              userId: user._id,
-              isDeleted: false,
-            });
-
-            if (!chat) {
-              throw new NotFoundException('Chat not found');
-            }
-          }
-
-          await this.messageRepository.save({
-            chatId: chat._id,
-            userId: user._id,
-            role: MessageRole.USER,
-            content: dto.message,
-          });
-
-          /**
-           * LLMs do NOT remember anything.
-           * They are stateless.
-           * Every request must include the entire conversation history.
-           * So instead of sending only the last message, we send the entire history.
-           */
-
-          const history = await this.messageRepository.getMessageHistory(chat._id);
-
-          const formattedHistory = history.map((msg: MessageDocument) => ({
-            role: msg.role,
-            content: msg.content,
-          }));
-
-          /**
-           * 4️⃣ Stream AI response
-           */
-          const stream = this.client.chatCompletionStream({
-            model: 'meta-llama/Llama-3.1-8B-Instruct',
-            messages: formattedHistory,
-          });
-
-          for await (const chunk of stream) {
-            const content = chunk.choices?.[0]?.delta?.content;
-            if (content) {
-              fullAssistantResponse += content;
-              subscriber.next({ data: content } as MessageEvent);
-            }
-          }
-
-          await this.messageRepository.save({
-            chatId: chat._id,
-            userId: user._id,
-            role: MessageRole.ASSISTANT,
-            content: fullAssistantResponse,
-          });
-
-          subscriber.next({
-            data: JSON.stringify({
-              type: 'meta',
-              chatId: chat._id,
-            }),
-          } as MessageEvent);
-
-          subscriber.next({ data: '__END__' } as MessageEvent);
-          subscriber.complete();
-
         } catch (error) {
           subscriber.error(error);
         }
@@ -313,9 +226,10 @@ export class ChatbotService {
       throw new NotFoundException('Chat not found');
     }
 
-    const updated = await this.chatRepository.updateById({
-      isDeleted: true,
-    }, chat._id);
+    await this.messageRepository.bulkDelete({
+      chatId: chat._id,
+    });
+    const updated = await this.chatRepository.delete(chat._id);
 
     return {
       statusCode: updated ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR,
@@ -323,10 +237,21 @@ export class ChatbotService {
     };
   }
 
-  private async generateTitle(userMessage: string): Promise<string | undefined> {
-    const completion = await this.client.chatCompletion({
-      model: 'meta-llama/Llama-3.1-8B-Instruct',
-      messages: [
+  async getAvailableModels(): Promise<ApiResponse> {
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Available models fetched successfully',
+      data: modelsConstant.LLM_PROVIDERS,
+    };
+  }
+
+  private async generateTitle(
+    userMessage: string,
+    provider: modelsConstant.LLMProviderKey,
+    model: string,
+  ): Promise<string | undefined> {
+    try {
+      return await this.llmService.complete(provider, model, [
         {
           role: 'system',
           content:
@@ -336,12 +261,10 @@ export class ChatbotService {
           role: 'user',
           content: userMessage,
         },
-      ],
-      temperature: 0.3,
-      max_tokens: 20,
-    });
-
-    return completion.choices?.[0]?.message?.content?.trim();
+      ]);
+    } catch {
+      return undefined;
+    }
   }
 
   private cleanTitle(title: string): string {
