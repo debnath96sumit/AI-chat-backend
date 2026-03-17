@@ -4,9 +4,11 @@ import { AppModule } from './app.module';
 import { ConfigService } from "@nestjs/config";
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'node:path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
   app.enableCors({
     origin: [configService.getOrThrow<string>("FRONTEND_URL")], // allowed origins
@@ -21,6 +23,7 @@ async function bootstrap() {
   );
   app.setGlobalPrefix('/api');
   app.useGlobalPipes(new ValidationPipe());
+  app.useStaticAssets(join(__dirname, "..", "public"));
   app.enableVersioning({
     type: VersioningType.URI,
   });

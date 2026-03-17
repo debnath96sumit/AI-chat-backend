@@ -4,7 +4,7 @@ import { UserService } from './user.service';
 import { AuthGuard } from '@nestjs/passport';
 import { LoginUser } from '@common/decorator/login-user.decorator';
 import type { AuthenticatedUser } from '@auth/types/authenticated-user.type';
-import { ChangePasswordDTO } from './dto/user.dto';
+import { ChangePasswordDTO, UpdateProfileApiDTO } from './dto/user.dto';
 
 @ApiTags("User")
 @Controller('user')
@@ -32,5 +32,17 @@ export class UserController {
         @LoginUser() user: AuthenticatedUser,
     ) {
         return await this.userService.userChangePassword(dto, user);
+    }
+
+    @Version("1")
+    @Post("update-profile")
+    @UseGuards(AuthGuard("jwt"))
+    @ApiBearerAuth()
+    @ApiConsumes("application/json")
+    async userProfileDetails(
+        @Body() dto: UpdateProfileApiDTO,
+        @LoginUser() user: AuthenticatedUser,
+    ) {
+        return await this.userService.userUpdateProfile(dto, user);
     }
 }

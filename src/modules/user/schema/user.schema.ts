@@ -33,8 +33,14 @@ export class User {
     @Prop({ type: String, default: "" })
     password: string;
 
-    @Prop({ type: String, default: "" })
-    profileImage?: string;
+    @Prop({
+        type: {
+            mediaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Media' },
+            url: { type: String }
+        },
+        default: null
+    })
+    profileImage?: { mediaId: Types.ObjectId; url: string } | null;
 
     @Prop({ default: false, type: Boolean })
     isAccountVerified: boolean;

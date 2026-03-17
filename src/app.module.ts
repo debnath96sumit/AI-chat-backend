@@ -10,7 +10,9 @@ import { RoleRepositoryModule } from '@modules/role/repositories/role.repository
 import { RefreshTokenModule } from '@modules/refresh-token/refresh-token.module';
 import { HelpersModule } from '@helpers/helpers.module';
 import { RedisModule } from '@common/redis/redis.module';
-import { LLMModule } from './modules/llm/llm.module';
+import { LLMModule } from '@modules/llm/llm.module';
+import { MediaModule } from '@modules/media/media.module';
+import { MediaRepositoryModule } from '@modules/media/repositories/media.repository.module';
 
 @Module({
   imports: [
@@ -25,7 +27,9 @@ import { LLMModule } from './modules/llm/llm.module';
     RoleRepositoryModule,
     RefreshTokenModule,
     ChatbotModule,
-    LLMModule
+    LLMModule,
+    MediaModule,
+    MediaRepositoryModule
   ],
   providers: [],
 })
