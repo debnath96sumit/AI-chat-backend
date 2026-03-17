@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InferenceClient } from '@huggingface/inference';
-import { ChatMessage, ILLMProvider } from '../interfaces/llm-provider.interface';
+import { ChatMessage, CompletionResponse, ILLMProvider, StreamResponse } from '../interfaces/llm-provider.interface';
 
 @Injectable()
 export class HuggingFaceProvider implements ILLMProvider, OnModuleInit {
@@ -16,7 +16,7 @@ export class HuggingFaceProvider implements ILLMProvider, OnModuleInit {
         this.logger.log('✅ HuggingFace provider initialized');
     }
 
-    async *stream(messages: ChatMessage[], model: string): AsyncIterable<string> {
+    async *stream(messages: ChatMessage[], model: string): AsyncIterable<StreamResponse> {
         const stream = this.client.chatCompletionStream({
             model,
             messages,
@@ -24,11 +24,23 @@ export class HuggingFaceProvider implements ILLMProvider, OnModuleInit {
 
         for await (const chunk of stream) {
             const content = chunk.choices?.[0]?.delta?.content;
-            if (content) yield content;
+            if (content) yield { content };
+
+            // HF might provide usage in the last chunk or metadata (check if available)
+            const usage = (chunk as any).usage;
+            if (usage) {
+                yield {
+                    usage: {
+                        promptTokens: usage.prompt_tokens,
+                        completionTokens: usage.completion_tokens,
+                        totalTokens: usage.total_tokens,
+                    },
+                };
+            }
         }
     }
 
-    async complete(messages: ChatMessage[], model: string): Promise<string> {
+    async complete(messages: ChatMessage[], model: string): Promise<CompletionResponse> {
         const response = await this.client.chatCompletion({
             model,
             messages,
@@ -36,6 +48,16 @@ export class HuggingFaceProvider implements ILLMProvider, OnModuleInit {
             max_tokens: 20,
         });
 
-        return response.choices?.[0]?.message?.content?.trim() ?? '';
+        const content = response.choices?.[0]?.message?.content?.trim() ?? '';
+        const usage = (response as any).usage;
+
+        return {
+            content,
+            usage: usage ? {
+                promptTokens: usage.prompt_tokens,
+                completionTokens: usage.completion_tokens,
+                totalTokens: usage.total_tokens,
+            } : undefined,
+        };
     }
 }

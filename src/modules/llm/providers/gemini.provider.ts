@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenAI } from '@google/genai';
-import { ChatMessage, ILLMProvider } from '../interfaces/llm-provider.interface';
+import { ChatMessage, CompletionResponse, ILLMProvider, StreamResponse } from '../interfaces/llm-provider.interface';
 
 @Injectable()
 export class GeminiProvider implements ILLMProvider, OnModuleInit {
@@ -16,7 +16,7 @@ export class GeminiProvider implements ILLMProvider, OnModuleInit {
         this.logger.log('✅ Gemini provider initialized');
     }
 
-    async *stream(messages: ChatMessage[], model: string): AsyncIterable<string> {
+    async *stream(messages: ChatMessage[], model: string): AsyncIterable<StreamResponse> {
         // Gemini separates system prompt from the conversation history
         const systemMessage = messages.find((m) => m.role === 'system');
         const conversationMessages = messages.filter((m) => m.role !== 'system');
@@ -37,11 +37,21 @@ export class GeminiProvider implements ILLMProvider, OnModuleInit {
 
         for await (const chunk of response) {
             const text = chunk.text;
-            if (text) yield text;
+            if (text) yield { content: text };
+            
+            if (chunk.usageMetadata) {
+                yield {
+                    usage: {
+                        promptTokens: chunk.usageMetadata.promptTokenCount ?? 0,
+                        completionTokens: chunk.usageMetadata.candidatesTokenCount ?? 0,
+                        totalTokens: chunk.usageMetadata.totalTokenCount ?? 0,
+                    },
+                };
+            }
         }
     }
 
-    async complete(messages: ChatMessage[], model: string): Promise<string> {
+    async complete(messages: ChatMessage[], model: string): Promise<CompletionResponse> {
         const systemMessage = messages.find((m) => m.role === 'system');
         const conversationMessages = messages.filter((m) => m.role !== 'system');
 
@@ -60,6 +70,15 @@ export class GeminiProvider implements ILLMProvider, OnModuleInit {
             },
         });
 
-        return response.text?.trim() ?? '';
+        const usage = response.usageMetadata;
+
+        return {
+            content: response.text?.trim() ?? '',
+            usage: usage ? {
+                promptTokens: usage.promptTokenCount ?? 0,
+                completionTokens: usage.candidatesTokenCount ?? 0,
+                totalTokens: usage.totalTokenCount ?? 0,
+            } : undefined,
+        };
     }
 }

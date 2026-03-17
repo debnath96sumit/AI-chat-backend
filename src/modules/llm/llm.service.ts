@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { GroqProvider } from './providers/groq.provider';
 import { GeminiProvider } from './providers/gemini.provider';
 import { HuggingFaceProvider } from './providers/huggingFace.provider';
-import { ChatMessage, ILLMProvider } from './interfaces/llm-provider.interface';
+import { ChatMessage, CompletionResponse, ILLMProvider, StreamResponse } from './interfaces/llm-provider.interface';
 import { getDefaultModel, isValidModel, LLMProviderKey } from './constants/models.constant';
 
 
@@ -50,7 +50,7 @@ export class LLMService {
         providerKey: LLMProviderKey,
         model: string,
         messages: ChatMessage[],
-    ): AsyncIterable<string> {
+    ): AsyncIterable<StreamResponse> {
         return this.getProvider(providerKey).stream(messages, model);
     }
 
@@ -61,7 +61,7 @@ export class LLMService {
         providerKey: LLMProviderKey,
         model: string,
         messages: ChatMessage[],
-    ): Promise<string> {
+    ): Promise<CompletionResponse> {
         return this.getProvider(providerKey).complete(messages, model);
     }
 }

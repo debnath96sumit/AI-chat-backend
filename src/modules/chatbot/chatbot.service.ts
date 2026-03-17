@@ -97,6 +97,7 @@ export class ChatbotService {
     return new Observable<MessageEvent>((subscriber) => {
       void (async () => {
         let fullAssistantResponse = '';
+        let finalUsage: any = null;
 
         try {
           const chat = await this.chatRepository.getByField({
@@ -118,16 +119,22 @@ export class ChatbotService {
           }));
 
           for await (const chunk of this.llmService.stream(provider, modelId, formattedHistory)) {
-            fullAssistantResponse += chunk;
-            subscriber.next({ data: chunk } as MessageEvent);
+            if (chunk.content) {
+              fullAssistantResponse += chunk.content;
+              subscriber.next({ data: chunk.content } as MessageEvent);
+            }
+            if (chunk.usage) {
+              finalUsage = chunk.usage;
+            }
           }
 
-          // Persist full assistant response
+          // Persist full assistant response with token usage
           await this.messageRepository.save({
             chatId: chat._id,
             userId: user._id,
             role: MessageRole.ASSISTANT,
             content: fullAssistantResponse,
+            tokenUsage: finalUsage,
           });
 
           subscriber.next({ data: '__END__' } as MessageEvent);
@@ -251,7 +258,7 @@ export class ChatbotService {
     model: string,
   ): Promise<string | undefined> {
     try {
-      return await this.llmService.complete(provider, model, [
+      const response = await this.llmService.complete(provider, model, [
         {
           role: 'system',
           content:
@@ -262,6 +269,7 @@ export class ChatbotService {
           content: userMessage,
         },
       ]);
+      return response.content;
     } catch {
       return undefined;
     }

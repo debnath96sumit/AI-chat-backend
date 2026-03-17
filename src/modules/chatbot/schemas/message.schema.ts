@@ -41,10 +41,17 @@ export class Message {
     content: string;
 
     @Prop({
-        type: Number,
-        default: 0,
+        type: {
+            promptTokens: Number,
+            completionTokens: Number,
+            totalTokens: Number,
+        }, default: null
     })
-    tokensUsed?: number;
+    tokenUsage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+    }
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
