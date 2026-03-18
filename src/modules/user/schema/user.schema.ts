@@ -40,7 +40,7 @@ export class User {
         },
         default: null
     })
-    profileImage?: { mediaId: Types.ObjectId; url: string } | null;
+    profileImage?: { mediaId: Types.ObjectId | null; url: string } | null;
 
     @Prop({ default: false, type: Boolean })
     isAccountVerified: boolean;
@@ -69,7 +69,7 @@ export class User {
     googleId: string;
 
     @Prop({ type: String, default: "", index: true })
-    appleId: string;
+    githubId: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

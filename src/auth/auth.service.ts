@@ -456,7 +456,7 @@ export class AuthService {
             password: 'Password@123',
             role: userRole._id,
             isAccountVerified: userInfo.emailVerified !== false,
-            profileImage: userInfo.profileImage ?? null,
+            profileImage: { mediaId: null, url: userInfo.profileImage ?? null },
             googleId: provider === "google" ? userInfo.id : null,
         };
 
@@ -527,5 +527,54 @@ export class AuthService {
             },
         );
         return salt;
+    }
+
+    async handleGithubLogin(githubUser: {
+        githubId: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        profileImage: string;
+    }, req: Request): Promise<{ token: string; refreshToken: string }> {
+
+        let user = await this.userRepository.getByField({ githubId: githubUser.githubId });
+
+        if (!user && githubUser.email) {
+            user = await this.userRepository.getByField({ email: githubUser.email });
+            if (user) {
+                await this.userRepository.updateById(
+                    { githubId: githubUser.githubId },
+                    user._id
+                );
+            }
+        }
+
+        if (!user) {
+            const userRole = await this.roleRepository.getByField({
+                role: 'user',
+                isDeleted: false,
+            });
+            if (!userRole?._id) throw new BadRequestException("Invalid user role!");
+            user = await this.userRepository.save({
+                githubId: githubUser.githubId,
+                email: githubUser.email,
+                firstName: githubUser.firstName,
+                lastName: githubUser.lastName,
+                fullName: `${githubUser.firstName} ${githubUser.lastName}`.trim(),
+                profileImage: { mediaId: null, url: githubUser.profileImage },
+                isAccountVerified: true,
+                role: userRole._id,
+            });
+        }
+
+        const { accessToken: token, refreshToken } = await this.issueTokens(
+            user,
+            req,
+        );
+
+        return {
+            token,
+            refreshToken,
+        };
     }
 }

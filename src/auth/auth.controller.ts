@@ -1,16 +1,18 @@
-import { Body, Controller, Get, HttpCode, Post, Req, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards, Version } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CustomerEmailVerificationDTO, CustomerResetPasswordDTO, EmailDTO, RefreshJwtDto, SocialSignInDTO, UserSignInDTO, UserSignUpDTO } from './dto/auth.dto';
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { AuthGuard } from '@nestjs/passport';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { GithubAuthGuard } from './guards/github-auth.guard';
+import { ConfigService } from '@nestjs/config';
 
 @ApiTags("Auth")
 @Controller('auth')
 export class AuthController {
 
-    constructor(private readonly authService: AuthService) { }
+    constructor(private readonly authService: AuthService, private readonly configService: ConfigService) { }
 
     @Version('1')
     @Post("social-signin")
@@ -78,5 +80,24 @@ export class AuthController {
     @ApiConsumes("application/json")
     async resetPassword(@Body() dto: CustomerResetPasswordDTO) {
         return await this.authService.resetPassword(dto);
+    }
+
+    @Version('1')
+    @Get('github')
+    @UseGuards(GithubAuthGuard)
+    @ApiOperation({ summary: 'Start GitHub OAuth flow' })
+    async githubLogin() {
+        // This route will be handled by the guard
+    }
+
+    @Version('1')
+    @Get('github/callback')
+    @UseGuards(GithubAuthGuard)
+    @ApiOperation({ summary: 'GitHub OAuth callback' })
+    async githubCallback(@Req() req: Request, @Res() res: Response) {
+        const { token, refreshToken } = await this.authService.handleGithubLogin(req.user as any, req);
+        return res.redirect(
+            `${this.configService.get('FRONTEND_URL')}/auth/github/callback?token=${token}&refreshToken=${refreshToken}`
+        );
     }
 }
