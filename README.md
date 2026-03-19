@@ -1,98 +1,208 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🤖 AI Chat — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A scalable, production-ready backend for an AI chat application built with **NestJS + TypeScript**. Supports multiple AI providers with real-time streaming, full user authentication lifecycle, and persistent chat history — all Dockerized and ready to deploy.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Pairs with the [AI-Chat-Frontend](https://github.com/debnath96sumit/AI-Chat-Frontend) repository.
 
-## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## ✨ Features
 
-```bash
-$ npm install
+- **Multi-Provider AI Support** — Direct REST API integration with Groq, Google Gemini, and Hugging Face Inference
+- **Real-time Streaming** — Server-Sent Events (SSE) to stream AI token responses to the frontend
+- **JWT Authentication** — Secure access and refresh token-based auth
+- **User Management** — Register, login, profile management
+- **Forgot & Reset Password** — Full password recovery flow with email notifications
+- **Chat Persistence** — Chat sessions and message history stored in MongoDB
+- **Email Templates** — Transactional emails via EJS templates (password reset, welcome, etc.)
+- **Dockerized** — Fully containerized with Docker and Docker Compose
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | NestJS (TypeScript) |
+| Database | MongoDB (Mongoose) |
+| Authentication | JWT (Access + Refresh Tokens) |
+| AI Providers | Groq, Google Gemini, Hugging Face Inference |
+| Streaming | Server-Sent Events (SSE) |
+| Email | Nodemailer + EJS Templates |
+| Containerization | Docker + Docker Compose |
+| Testing | Jest (Unit + E2E) |
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+├── auth/        
+├── common/      
+├── helpers/     
+├── modules/     
+
+views/
+└── email-templates/    # EJS email templates (password reset, welcome, etc.)
+
+test/                   # E2E tests
 ```
 
-## Compile and run the project
+---
+
+## 🔌 API Overview
+
+### Auth
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/auth/register` | Register a new user |
+| `POST` | `/auth/login` | Login and receive JWT tokens |
+| `POST` | `/auth/refresh` | Refresh access token |
+| `POST` | `/auth/forgot-password` | Send password reset email |
+| `POST` | `/auth/reset-password` | Reset password with token |
+
+### Chat
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/chat/session` | Create a new chat session |
+| `GET` | `/chat/sessions` | Get all sessions for a user |
+| `GET` | `/chat/session/:id` | Get messages in a session |
+| `POST` | `/chat/message` | Send a message and stream AI response |
+| `DELETE` | `/chat/session/:id` | Delete a chat session |
+
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js >= 18
+- Docker & Docker Compose
+- MongoDB instance (local or Atlas)
+- API keys for Groq, Gemini, and/or Hugging Face
+- Redis
+
+### Installation
 
 ```bash
-# development
-$ npm run start
+# Clone the repository
+git clone https://github.com/debnath96sumit/AI-chat-backend.git
+cd AI-chat-backend
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Install dependencies
+npm install
 ```
 
-## Run tests
+### Environment Variables
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cp .env.example .env
 ```
 
-## Deployment
+```env
+OPEN_AI_API_KEY=
+HF_TOKEN=
+GEMINI_API_KEY=
+GROQ_API_KEY=
+NODE_ENV=development
+PORT=
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+MONGO_URI=
+DB_DATABASE=
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+FRONTEND_URL=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+JWT_SECRET=
+SALT_ROUND=10
+JWT_ACCESS_EXPIRES_IN=
+JWT_REFRESH_EXPIRES_IN=
+JWT_REFRESH_EXPIRES_IN_REMEMBER=
+
+MAIL_HOST=
+MAIL_PORT=
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_FROM_NAME=
+MAIL_FROM_ADDRESS=
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+GITHUB_CALLBACK_URL=http://localhost:3000/api/v1/auth/github/callback
+FRONTEND_URL=http://localhost:5173
+
+```
+
+### Running Locally
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# Development mode with hot reload
+npm run start:dev
+
+# Production mode
+npm run start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Running with Docker
 
-## Resources
+```bash
+# Build and start all services
+docker-compose up --build
 
-Check out a few resources that may come in handy when working with NestJS:
+# Run in background
+docker-compose up -d --build
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Stop services
+docker-compose down
+```
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🧪 Testing
 
-## Stay in touch
+```bash
+# Unit tests
+npm run test
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# E2E tests
+npm run test:e2e
 
-## License
+# Test coverage
+npm run test:cov
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+---
+
+## 🎨 Frontend
+
+This backend is designed to work with the **AI-Chat-Frontend** — a React + Vite application that provides the chat UI.
+
+👉 [View the frontend repository](https://github.com/debnath96sumit/AI-Chat-Frontend)
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome. Feel free to check the [issues page](https://github.com/debnath96sumit/AI-chat-backend/issues).
+
+---
+
+## 👨‍💻 Author
+
+**Sumit Debnath**
+
+- LinkedIn: [linkedin.com/in/sumit-debnath-2214a6144](https://linkedin.com/in/sumit-debnath-2214a6144)
+- GitHub: [@debnath96sumit](https://github.com/debnath96sumit)
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).

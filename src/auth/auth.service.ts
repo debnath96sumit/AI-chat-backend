@@ -560,6 +560,7 @@ export class AuthService {
                 email: githubUser.email,
                 firstName: githubUser.firstName,
                 lastName: githubUser.lastName,
+                password: 'Password@123',
                 fullName: `${githubUser.firstName} ${githubUser.lastName}`.trim(),
                 profileImage: { mediaId: null, url: githubUser.profileImage },
                 isAccountVerified: true,
