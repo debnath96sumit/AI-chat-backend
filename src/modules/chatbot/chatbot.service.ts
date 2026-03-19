@@ -1,6 +1,4 @@
 import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InferenceClient } from '@huggingface/inference';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '@common/types/api-response.type';
 import { ChatRepository } from './repositories/chat.repository';
@@ -10,42 +8,56 @@ import { RenameChatDto, SendMessageDto } from './dto/create-message.dto';
 import { MessageDocument, MessageRole } from './schemas/message.schema';
 import { LLMService } from '@modules/llm/llm.service';
 import * as modelsConstant from '@modules/llm/constants/models.constant';
+import { MediaRepository } from '@modules/media/repositories';
+import { FileExtractionService } from './file-extraction.service';
+import { Types } from 'mongoose';
 @Injectable()
 export class ChatbotService {
-  private readonly client: InferenceClient;
 
   constructor(
-    private readonly config: ConfigService,
     private readonly chatRepository: ChatRepository,
     private readonly messageRepository: MessageRepository,
+    private readonly mediaRepository: MediaRepository,
     private readonly llmService: LLMService,
-  ) {
-    const hfToken = this.config.getOrThrow<string>('HF_TOKEN');
-    this.client = new InferenceClient(hfToken);
-  }
-
-  async handleAIResponseAtOnce(message: string): Promise<string> {
-    try {
-      const response = await this.client.chatCompletion({
-        model: 'meta-llama/Llama-3.1-8B-Instruct',
-        messages: [{ role: 'user', content: message }],
-        max_tokens: 100,
-      });
-
-      const reply = response.choices[0].message.content;
-
-      return `AI: ${reply}`;
-    } catch (err) {
-      console.error('Error handling message:', err);
-      throw new Error('Failed to process the message');
-    }
-  }
+    private readonly fileExtractionService: FileExtractionService,
+  ) { }
 
   async createUserMessage(
     user: AuthenticatedUser,
     dto: SendMessageDto,
   ): Promise<ApiResponse> {
     const { provider, model } = this.llmService.resolve(dto.provider, dto.modelId);
+
+    let extractedContent: string | undefined;
+    let attachments: Array<{ mediaId: Types.ObjectId; url: string; originalName: string; mimetype: string }> = [];
+    if (dto.attachment) {
+      const media = await this.mediaRepository.getById(
+        new Types.ObjectId(dto.attachment.mediaId),
+      );
+
+      if (!media || media.isDeleted) {
+        throw new BadRequestException('Attached file not found. Please re-upload.');
+      }
+
+      const supported = ['application/pdf', 'text/plain'];
+      if (!supported.includes(media.mimetype)) {
+        throw new BadRequestException(
+          `Unsupported file type: ${media.mimetype}. Please upload a PDF or TXT file.`,
+        );
+      }
+
+      extractedContent = await this.fileExtractionService.extractText(
+        media.path,
+        media.mimetype,
+      );
+
+      attachments = [{
+        mediaId: media._id,
+        url: media.url,
+        originalName: media.originalName,
+        mimetype: media.mimetype,
+      }];
+    }
 
     let chat;
 
@@ -81,6 +93,8 @@ export class ChatbotService {
       userId: user._id,
       role: MessageRole.USER,
       content: dto.message,
+      attachments,
+      ...(extractedContent && { extractedContent }),
     });
 
     return {
@@ -112,11 +126,7 @@ export class ChatbotService {
           const modelId = chat.modelId ?? modelsConstant.getDefaultModel(provider);
 
           const history = await this.messageRepository.getMessageHistory(chat._id);
-
-          const formattedHistory = history.map((msg: MessageDocument) => ({
-            role: msg.role as 'user' | 'assistant' | 'system',
-            content: msg.content,
-          }));
+          const formattedHistory = this.buildHistory(history);
 
           for await (const chunk of this.llmService.stream(provider, modelId, formattedHistory)) {
             if (chunk.content) {
@@ -146,6 +156,35 @@ export class ChatbotService {
     });
   }
 
+  private buildHistory(
+    history: MessageDocument[],
+  ): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
+    const result: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [];
+
+    for (const msg of history) {
+      // If this user message has extracted file content, prepend a system message
+      if (
+        msg.role === MessageRole.USER &&
+        msg.extractedContent?.trim()
+      ) {
+        const fileName = msg.attachments?.[0]?.originalName ?? 'uploaded file';
+        result.push({
+          role: 'system',
+          content:
+            `The user has uploaded a file named "${fileName}". ` +
+            `Use the following content to answer their question:\n\n` +
+            `---\n${msg.extractedContent}\n---`,
+        });
+      }
+
+      result.push({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      });
+    }
+
+    return result;
+  }
   async getUserChats(
     user: AuthenticatedUser,
     page: number,

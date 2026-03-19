@@ -41,6 +41,17 @@ export class Message {
     content: string;
 
     @Prop({
+        type: Array,
+        default: [],
+    })
+    attachments: Array<{ mediaId: Types.ObjectId; url: string; originalName: string; mimetype: string }>;
+
+    @Prop({
+        type: String,
+        required: false,
+    })
+    extractedContent: string;
+    @Prop({
         type: {
             promptTokens: Number,
             completionTokens: Number,

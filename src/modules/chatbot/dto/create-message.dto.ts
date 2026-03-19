@@ -1,7 +1,28 @@
 import * as modelsConstant from '@modules/llm/constants/models.constant';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
 
+export class AttachmentDto {
+  @ApiProperty({ description: 'Media document _id returned from /media/upload' })
+  @IsMongoId()
+  mediaId: string;
+
+  @ApiProperty({ description: 'Public URL returned from /media/upload' })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiProperty({ description: 'Original file name', example: 'resume.pdf' })
+  @IsString()
+  @IsNotEmpty()
+  originalName: string;
+
+  @ApiProperty({ description: 'Mimetype', example: 'application/pdf' })
+  @IsString()
+  @IsNotEmpty()
+  mimetype: string;
+}
 export class SendMessageDto {
   @ApiProperty({ required: false })
   @IsOptional()
@@ -29,6 +50,15 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   modelId?: string;
+
+  @ApiPropertyOptional({
+    description: 'One attachment from a prior /media/upload call. Only one file per message supported.',
+    type: AttachmentDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AttachmentDto)
+  attachment?: AttachmentDto;
 }
 
 export class RenameChatDto {

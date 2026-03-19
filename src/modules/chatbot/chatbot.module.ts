@@ -9,6 +9,7 @@ import { ChatRepository } from './repositories/chat.repository';
 import { MessageRepository } from './repositories/message.repository';
 import { AuthModule } from '@auth/auth.module';
 import { LLMModule } from '@modules/llm/llm.module';
+import { FileExtractionService } from './file-extraction.service';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { LLMModule } from '@modules/llm/llm.module';
     LLMModule,
   ],
   controllers: [ChatbotController],
-  providers: [ChatbotService, ChatRepository, MessageRepository],
+  providers: [ChatbotService, ChatRepository, MessageRepository, FileExtractionService],
 })
 export class ChatbotModule { }

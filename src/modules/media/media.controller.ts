@@ -13,6 +13,7 @@ import { ApiConsumes, ApiTags } from "@nestjs/swagger";
 import {
   SingleFileInterceptor,
   MultiFileInterceptor,
+  ChatFileInterceptor,
 } from "@common/interceptors/files.interceptor";
 import { MediaService } from "./media.service";
 import { SingleFileUploadDTO, MultipleFileUploadDTO } from "./dto/media.dto";
@@ -27,6 +28,17 @@ export class MediaController {
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(SingleFileInterceptor("file", "file"))
   async uploadSingleFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: SingleFileUploadDTO,
+  ) {
+    return await this.mediaService.uploadSingleFile(file, dto);
+  }
+
+  @Post("upload-chat-file")
+  @HttpCode(200)
+  @ApiConsumes("multipart/form-data")
+  @UseInterceptors(ChatFileInterceptor("chat-files", "file"))
+  async uploadChatFile(
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: SingleFileUploadDTO,
   ) {
