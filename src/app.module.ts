@@ -13,6 +13,8 @@ import { RedisModule } from '@common/redis/redis.module';
 import { LLMModule } from '@modules/llm/llm.module';
 import { MediaModule } from '@modules/media/media.module';
 import { MediaRepositoryModule } from '@modules/media/repositories/media.repository.module';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -31,6 +33,11 @@ import { MediaRepositoryModule } from '@modules/media/repositories/media.reposit
     MediaModule,
     MediaRepositoryModule
   ],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule { }
