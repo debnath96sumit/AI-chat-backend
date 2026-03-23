@@ -10,6 +10,9 @@ export class RefreshToken {
   @Prop({ type: String, required: true, index: true })
   hash: string;
 
+  @Prop({ type: String, required: true, index: true })
+  accessToken: string;
+
   @Prop({
     type: MongoSchema.Types.ObjectId,
     ref: "User",

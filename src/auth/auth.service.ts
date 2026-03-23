@@ -78,11 +78,18 @@ export class AuthService {
                 user = await this.createSocialUser(userInfo, body.provider);
             }
 
-            const { accessToken: token, refreshToken } = await this.issueTokens(
-                user,
-                req,
-            );
+            if (!user || !user._id) {
+                throw new BadRequestException("Failed to process user information");
+            }
 
+            const { accessToken: token, refreshToken } = await this.issueTokens(
+                user
+            );
+            await this.deviceHelper.saveOrUpdateDeviceInfo(
+                req,
+                user._id.toString(),
+                token,
+            );
             return {
                 statusCode: HttpStatus.OK,
                 message: "Login successful",
@@ -132,10 +139,13 @@ export class AuthService {
         });
 
         const { accessToken, refreshToken } = await this.issueTokens(
-            user,
-            req,
+            user
         );
-
+        await this.deviceHelper.saveOrUpdateDeviceInfo(
+            req,
+            user._id.toString(),
+            accessToken,
+        );
         return {
             statusCode: HttpStatus.CREATED,
             message: "User registered successfully!",
@@ -164,9 +174,13 @@ export class AuthService {
             checkIfExists?._id,
         );
 
-        const { accessToken, refreshToken } = await this.issueTokens(checkIfExists, req);
+        const { accessToken, refreshToken } = await this.issueTokens(checkIfExists);
         const userDetails = await this.userRepository.getUserDetails({ _id: checkIfExists._id });
-
+        await this.deviceHelper.saveOrUpdateDeviceInfo(
+            req,
+            checkIfExists._id.toString(),
+            accessToken,
+        );
         return {
             statusCode: HttpStatus.OK,
             message: "User login successful",
@@ -197,7 +211,7 @@ export class AuthService {
         };
     }
 
-    async refreshToken(body: RefreshJwtDto, req: Request): Promise<ApiResponse> {
+    async refreshToken(body: RefreshJwtDto): Promise<ApiResponse> {
         const authToken = body.accessToken;
 
         let tokenData = await this.userDeviceRepository.getByField({
@@ -240,7 +254,13 @@ export class AuthService {
                 throw new UnauthorizedException("Refresh token expired!");
             }
 
-            const { accessToken, refreshToken } = await this.issueTokens(user, req);
+            const { accessToken, refreshToken } = await this.issueTokens(user);
+
+            // Update the existing device record with the new accessToken
+            await this.userDeviceRepository.updateById(
+                { accessToken, last_active: Date.now() },
+                tokenData._id,
+            );
 
             return {
                 statusCode: HttpStatus.OK,
@@ -388,16 +408,30 @@ export class AuthService {
             };
         }
 
-        await this.userRepository.updateById(
+        const updatedUser = await this.userRepository.updateById(
             { password: body.newPassword },
             user._id,
         );
+        if (updatedUser) {
+            await Promise.all([
+                this.userDeviceRepository.updateByField(
+                    { expired: true },
+                    { user_id: user._id, isDeleted: false },
+                ),
+                this.refreshTokenRepository.bulkDelete({ userId: user._id }),
+            ]);
 
-        await this.redisHelper.del(verifiedKey);
+            await this.redisHelper.del(verifiedKey);
+
+            return {
+                statusCode: HttpStatus.OK,
+                message: "Password reset successfully. You can now log in.",
+            };
+        }
 
         return {
-            statusCode: HttpStatus.OK,
-            message: "Password reset successfully. You can now log in.",
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: "Failed to reset password. Please try again.",
         };
     }
     private async verifyGoogleToken(idToken: string): Promise<OathUserPayload> {
@@ -468,7 +502,7 @@ export class AuthService {
         return await this.userRepository.getUserDetails({ _id: saveUser._id });
     }
 
-    async issueTokens(user: any, req: Request, deviceToken?: string) {
+    async issueTokens(user: any) {
         const payload = { id: user._id, role: user.role };
         const accessToken = this.jwtService.sign(payload, {
             secret: this.configService.getOrThrow("JWT_SECRET"),
@@ -476,13 +510,6 @@ export class AuthService {
         });
 
         const refreshToken = await this.generateRefreshToken(accessToken, user._id);
-
-        await this.deviceHelper.saveOrUpdateDeviceInfo(
-            req,
-            user._id.toString(),
-            accessToken,
-            deviceToken,
-        );
 
         this.invalidAccessToken(user._id);
 
@@ -520,12 +547,12 @@ export class AuthService {
     ): Promise<string> {
         const salt = await genSalt(10);
         const hashedToken = await hash(accessToken.split(".")[2] + salt, salt);
-        await this.refreshTokenRepository.upsert(
-            { userId: user },
-            {
-                hash: hashedToken,
-            },
-        );
+        await this.refreshTokenRepository.save({
+            userId: user,
+            hash: hashedToken,
+            accessToken: accessToken,
+        });
+
         return salt;
     }
 
@@ -569,10 +596,13 @@ export class AuthService {
         }
 
         const { accessToken: token, refreshToken } = await this.issueTokens(
-            user,
-            req,
+            user
         );
-
+        await this.deviceHelper.saveOrUpdateDeviceInfo(
+            req,
+            user._id.toString(),
+            token,
+        );
         return {
             token,
             refreshToken,

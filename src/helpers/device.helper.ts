@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Request } from "express";
 import { getClientIp } from "request-ip";
 import { lookup } from "geoip-lite";
+import { UAParser } from "ua-parser-js";
 import { UserDeviceRepository } from "src/modules/user-devices/repository/user-device.repository";
 
 interface UserDevice {
@@ -16,6 +17,10 @@ interface UserDevice {
     user_id: string;
     accessToken: string;
     deviceToken: string;
+    deviceType: string;
+    browserInfo: { name: string; version: string };
+    deviceInfo: { vendor: string; model: string; type: string };
+    operatingSystem: { name: string; version: string };
 }
 
 @Injectable()
@@ -31,6 +36,9 @@ export class DeviceHelper {
         try {
             const ip = getClientIp(req);
             const geoIpInfo = ip ? lookup(ip) : null;
+            const userAgent = req.headers["user-agent"];
+            const parser = new UAParser(userAgent);
+            const uaResult = parser.getResult();
 
             if (!ip) return;
 
@@ -52,6 +60,20 @@ export class DeviceHelper {
                 user_id: userId,
                 accessToken,
                 deviceToken: deviceToken ?? "",
+                deviceType: uaResult.device.type || "Web",
+                browserInfo: {
+                    name: uaResult.browser.name || "",
+                    version: uaResult.browser.version || "",
+                },
+                deviceInfo: {
+                    vendor: uaResult.device.vendor || "",
+                    model: uaResult.device.model || "",
+                    type: uaResult.device.type || "desktop",
+                },
+                operatingSystem: {
+                    name: uaResult.os.name || "",
+                    version: uaResult.os.version || "",
+                },
             };
 
             if (existingDeviceData?._id) {

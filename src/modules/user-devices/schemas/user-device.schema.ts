@@ -37,7 +37,7 @@ export class UserDevice {
   @Prop({
     type: String,
     default: "Web",
-    enum: ["Web", "Android", "iOS"],
+    enum: ["Web", "Android", "iOS", "mobile", "tablet", "desktop", "console", "embedded", "smarttv", "wearable", "xr"],
     index: true,
   })
   deviceType: string;

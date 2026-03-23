@@ -55,7 +55,8 @@
     "pdf-parse": "^2.4.5",
     "reflect-metadata": "^0.2.2",
     "request-ip": "^3.3.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -75,6 +76,7 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/request-ip": "^0.0.41",
     "@types/supertest": "^6.0.2",
+    "@types/ua-parser-js": "^0.7.39",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

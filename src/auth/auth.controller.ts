@@ -55,8 +55,8 @@ export class AuthController {
     @Post("refresh-token")
     @HttpCode(200)
     @UseGuards(ThrottlerGuard)
-    async refreshToken(@Body() dto: RefreshJwtDto, @Req() req: Request) {
-        return this.authService.refreshToken(dto, req);
+    async refreshToken(@Body() dto: RefreshJwtDto) {
+        return this.authService.refreshToken(dto);
     }
 
     @Version('1')

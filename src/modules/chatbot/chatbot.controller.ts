@@ -6,6 +6,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { LoginUser } from '@common/decorator/login-user.decorator';
 import type { AuthenticatedUser } from '@auth/types/authenticated-user.type';
 import { SseAuthGuard } from '@auth/guards/sse-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Chats')
 @ApiBearerAuth()
@@ -13,6 +14,7 @@ import { SseAuthGuard } from '@auth/guards/sse-auth.guard';
 export class ChatbotController {
   constructor(private readonly chatbotService: ChatbotService) { }
 
+  @Throttle({ global: { ttl: 60000, limit: 10 } })
   @Sse('stream/:chatId')
   @UseGuards(SseAuthGuard)
   @ApiOperation({ summary: 'Stream assistant response' })
@@ -30,6 +32,7 @@ export class ChatbotController {
     return this.chatbotService.streamAssistantResponse(user, chatId);
   }
 
+  @Throttle({ global: { ttl: 60000, limit: 20 } })
   @Post('send-message')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Send user message' })
