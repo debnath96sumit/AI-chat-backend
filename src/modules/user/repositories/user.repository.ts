@@ -58,6 +58,7 @@ export class UserRepository extends BaseRepository<UserDocument> {
                     email: "$email",
                     status: "$status",
                     user_devices: "$user_devices",
+                    stripeCustomerId: "$stripeCustomerId",
                 },
             },
         ]);

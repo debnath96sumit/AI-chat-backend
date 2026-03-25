@@ -18,7 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migrate": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/migrate.ts"
+    "migrate": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/migrate.ts",
+    "seed:plans": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/database/seeds/seed-plan.ts"
   },
   "dependencies": {
     "@google/genai": "^1.45.0",
@@ -48,6 +49,7 @@
     "ioredis": "^5.9.3",
     "mongoose": "^8.23.0",
     "multer": "^2.1.1",
+    "nestjs-stripe": "^1.0.0",
     "nodemailer": "^8.0.1",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
@@ -56,6 +58,7 @@
     "reflect-metadata": "^0.2.2",
     "request-ip": "^3.3.0",
     "rxjs": "^7.8.1",
+    "stripe": "^20.4.1",
     "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {
