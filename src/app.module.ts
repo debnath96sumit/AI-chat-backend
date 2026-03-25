@@ -15,6 +15,7 @@ import { MediaModule } from '@modules/media/media.module';
 import { MediaRepositoryModule } from '@modules/media/repositories/media.repository.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { ThrottlerGuard } from '@nestjs/throttler';
     ChatbotModule,
     LLMModule,
     MediaModule,
-    MediaRepositoryModule
+    MediaRepositoryModule,
+    SubscriptionModule
   ],
   providers: [
     {

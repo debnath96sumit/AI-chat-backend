@@ -48,9 +48,6 @@ export class User {
     @Prop({ type: String, default: "", index: true })
     stripeCustomerId: string;
 
-    @Prop({ default: false, type: Boolean })
-    usedFreeSubscription: boolean;
-
     @Prop({
         type: String,
         default: "Active",

@@ -8,12 +8,14 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'node:path';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
   const configService = app.get(ConfigService);
   app.enableCors({
-    origin: [configService.getOrThrow<string>("FRONTEND_URL")], // allowed origins
+    origin: [configService.getOrThrow<string>("FRONTEND_URL")],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // allow cookies or Authorization headers
+    credentials: true,
   });
 
   app.use(

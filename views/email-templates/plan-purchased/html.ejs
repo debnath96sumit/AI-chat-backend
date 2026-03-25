@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Welcome to SwiftLog Enterprise</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 620px;
+            background: #ffffff;
+            margin: auto;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #e6e6e6;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ff7a00;
+        }
+
+        .title {
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        .box {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 20px;
+            background: #ff7a00;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="header">
+            <div class="logo">AI Pasta</div>
+            <div class="title">Plan Purchased</div>
+        </div>
+
+        <p>Hello <%= userName %>,</p>
+
+        <p>
+            Thank you for choosing <strong>AI Pasta</strong>.
+            Your subscription has been successfully activated.
+        </p>
+
+        <div class="box">
+            <strong>Subscription Details</strong>
+            <br /><br />
+            Auto renew date: <strong>
+                <%= endDate %>
+            </strong><br />
+        </div>
+
+        <p>
+            Enjoy more usage with your new plan.
+        </p>
+
+        <div class="box">
+            <a class="btn" href="<%= dashboardUrl %>">Go to new chat</a>
+        </div>
+
+        <div class="footer">
+            If you have any questions, please contact us at support@aipasta.com
+            <br /><br />
+            © <%= year %> AI Pasta. All Rights Reserved.
+        </div>
+
+    </div>
+
+</body>
+
+</html>

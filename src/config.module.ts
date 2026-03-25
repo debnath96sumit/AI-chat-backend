@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { existsSync } from 'node:fs';
+import Stripe from "stripe";
 
 @Global()
 @Module({
@@ -55,7 +56,17 @@ import { existsSync } from 'node:fs';
         ]),
     ],
     providers: [
+        {
+            provide: "StripeToken",
+            inject: [ConfigService],
+            useFactory: (configService: ConfigService) => {
+                return new Stripe(configService.getOrThrow<string>("STRIPE_SECRET_KEY"), {
+                    apiVersion: "2026-02-25.clover" as Stripe.LatestApiVersion,
+                });
+            },
+        },
         Logger,
-    ]
+    ],
+    exports: ["StripeToken"],
 })
 export class ApiConfigModule { }
