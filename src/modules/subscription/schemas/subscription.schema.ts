@@ -41,7 +41,7 @@ SubscriptionSchema.index(
     { unique: true, partialFilterExpression: { status: { $in: ["active", "trialing", "past_due"] } } }
 );
 
-SubscriptionSchema.virtual("plan", {
+SubscriptionSchema.virtual("plan_details", {
     ref: "SubscriptionPlan",
     localField: "subscriptionPlanId",
     foreignField: "_id",

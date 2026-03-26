@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Res, Req, Headers, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Res, Req, Headers, HttpStatus, Query, Version } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { CreateCheckoutSessionDto } from './dto/subscription.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
@@ -19,6 +19,7 @@ export class SubscriptionController {
         private readonly stripeHelper: StripeHelper,
     ) { }
 
+    @Version("1")
     @Get('plans')
     @UseGuards(AuthGuard('jwt'))
     @ApiBearerAuth()
@@ -26,6 +27,7 @@ export class SubscriptionController {
         return this.subscriptionService.getPlans();
     }
 
+    @Version("1")
     @Post("checkout")
     @Roles(UserRole.USER)
     @UseGuards(AuthGuard("jwt"), RBAcGuard)
@@ -38,6 +40,7 @@ export class SubscriptionController {
         return this.subscriptionService.createCheckoutSession(dto, user);
     }
 
+    @Version("1")
     @Post("cancel")
     @Roles(UserRole.USER)
     @UseGuards(AuthGuard("jwt"), RBAcGuard)
@@ -47,6 +50,7 @@ export class SubscriptionController {
         return this.subscriptionService.cancelSubscription(user);
     }
 
+    @Version("1")
     @Get("me")
     @Roles(UserRole.USER)
     @UseGuards(AuthGuard("jwt"), RBAcGuard)
@@ -69,5 +73,17 @@ export class SubscriptionController {
         } catch (err) {
             return res.status(HttpStatus.BAD_REQUEST).send(`Webhook Error: ${err.message}`);
         }
+    }
+
+    @Version("1")
+    @Get("success")
+    @Roles(UserRole.USER)
+    @UseGuards(AuthGuard("jwt"), RBAcGuard)
+    @ApiBearerAuth()
+    @ApiConsumes("application/json")
+    async handleSuccess(
+        @Query("session_id") sessionId: string
+    ) {
+        return this.subscriptionService.handleSuccess(sessionId);
     }
 }

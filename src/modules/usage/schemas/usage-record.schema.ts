@@ -3,7 +3,7 @@ import mongoose, { Types } from "mongoose";
 
 export type UsageRecordDocument = mongoose.HydratedDocument<UsageRecord>;
 
-@Schema({ timestamps: true, versionKey: false })
+@Schema({ timestamps: true, versionKey: false, collection: 'usageRecords' })
 export class UsageRecord {
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true })
     userId: Types.ObjectId;

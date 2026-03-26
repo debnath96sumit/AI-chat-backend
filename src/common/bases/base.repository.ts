@@ -69,6 +69,21 @@ export class BaseRepository<T> {
         return await this.model.findOne(params, projection);
     }
 
+    async getByFieldWithPopulate(
+        params: FilterQuery<T>,
+        populateFields?: string[],
+    ): Promise<T | null> {
+        let query = this.model.findOne(params);
+
+        if (populateFields?.length) {
+            populateFields.forEach((field) => {
+                query = query.populate(field);
+            });
+        }
+
+        return await query;
+    }
+
     async delete(id: string | Types.ObjectId): Promise<T | null> {
         return await this.model.findByIdAndDelete(id);
     }

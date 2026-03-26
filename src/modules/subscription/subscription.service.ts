@@ -162,6 +162,24 @@ export class SubscriptionService {
                 break;
         }
     }
+
+    async handleSuccess(sessionId: string): Promise<ApiResponse> {
+        const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+        if (!session) throw new BadRequestException("Session not found");
+
+        const subscription = await this.subscriptionRepository.getByFieldWithPopulate({
+            stripeSubscriptionId: session.subscription as string,
+        }, ['plan_details']);
+
+        if (!subscription) throw new BadRequestException("Subscription not found");
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Subscription details fetched successfully",
+            data: subscription,
+        };
+    }
+
     private async handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription): Promise<void> {
         await this.subscriptionRepository.updateByField(
             {
