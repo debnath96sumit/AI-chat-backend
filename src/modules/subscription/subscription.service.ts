@@ -105,6 +105,7 @@ export class SubscriptionService {
         if (!stripeCustomerId) {
             const customer = await this.stripeHelper.createCustomer(user.fullName, user.email);
             if (!customer) throw new BadRequestException("Failed to create customer");
+            stripeCustomerId = customer.id;
             await this.userRepository.updateById({ stripeCustomerId: customer.id }, user._id)
         }
 
@@ -124,6 +125,14 @@ export class SubscriptionService {
             message: "Checkout session created successfully",
             data: { url: session.url },
         };
+    }
+
+    async getUserTier(userId: string): Promise<"free" | "pro"> {
+        const subscription = await this.subscriptionRepository.findActiveSubscription(userId);
+        if (!subscription) return "free";
+        if (subscription.status !== "active") return "free";
+        if (new Date(subscription.currentPeriodEnd) < new Date()) return "free";
+        return "pro";
     }
 
     async handleWebhook(event: Stripe.Event): Promise<void> {

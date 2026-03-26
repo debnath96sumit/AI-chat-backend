@@ -54,4 +54,21 @@ export class SubscriptionRepository extends BaseRepository<SubscriptionDocument>
             return null;
         }
     }
+
+    async findActiveSubscription(userId: string): Promise<Subscription | null> {
+        try {
+            const currentDate = new Date();
+            const subscription = await this.getByField({
+                userId: new Types.ObjectId(userId),
+                isDeleted: false,
+                status: { $in: ["active", "trialing", "past_due"] },
+                currentPeriodEnd: { $gte: currentDate },
+            });
+
+            return subscription;
+        } catch (error) {
+            console.log(error);
+            return null;
+        }
+    }
 }

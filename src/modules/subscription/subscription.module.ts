@@ -16,5 +16,6 @@ import { SubscriptionPlanRepository } from './repositories/subscription-plan.rep
   ],
   controllers: [SubscriptionController],
   providers: [SubscriptionService, SubscriptionRepository, SubscriptionPlanRepository],
+  exports: [SubscriptionService, SubscriptionRepository],
 })
 export class SubscriptionModule { }

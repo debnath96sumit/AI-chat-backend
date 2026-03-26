@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '@common/types/api-response.type';
 import { ChatRepository } from './repositories/chat.repository';
@@ -11,6 +11,8 @@ import * as modelsConstant from '@modules/llm/constants/models.constant';
 import { MediaRepository } from '@modules/media/repositories';
 import { FileExtractionService } from './file-extraction.service';
 import { Types } from 'mongoose';
+import { UsageService } from '@modules/usage/usage.service';
+import { SubscriptionService } from '@modules/subscription/subscription.service';
 @Injectable()
 export class ChatbotService {
 
@@ -20,12 +22,20 @@ export class ChatbotService {
     private readonly mediaRepository: MediaRepository,
     private readonly llmService: LLMService,
     private readonly fileExtractionService: FileExtractionService,
+    private readonly usageService: UsageService,
+    private readonly subscriptionService: SubscriptionService,
   ) { }
 
   async createUserMessage(
     user: AuthenticatedUser,
     dto: SendMessageDto,
   ): Promise<ApiResponse> {
+    const tier = await this.subscriptionService.getUserTier(user._id.toString());
+    const FREE_PROVIDER = "groq";
+    if (tier === "free" && dto.provider !== FREE_PROVIDER) {
+      throw new ForbiddenException("Upgrade to Pro to access all models.");
+    }
+
     const { provider, model } = this.llmService.resolve(dto.provider, dto.modelId);
 
     let extractedContent: string | undefined;
@@ -138,15 +148,14 @@ export class ChatbotService {
             }
           }
 
-          // Persist full assistant response with token usage
-          await this.messageRepository.save({
+          const msg = await this.messageRepository.save({
             chatId: chat._id,
             userId: user._id,
             role: MessageRole.ASSISTANT,
             content: fullAssistantResponse,
             tokenUsage: finalUsage,
           });
-
+          await this.usageService.incrementTokenUsage(user._id, msg.tokenUsage?.totalTokens || 0);
           subscriber.next({ data: '__END__' } as MessageEvent);
           subscriber.complete();
         } catch (error) {
@@ -192,10 +201,11 @@ export class ChatbotService {
   ): Promise<ApiResponse> {
     const userId = user._id;
     if (!userId) throw new BadRequestException('Invalid user details.');
+    const tier = await this.subscriptionService.getUserTier(user._id.toString());
     const chats = await this.chatRepository.getAllPaginate({
       filter: { userId },
       page,
-      limit,
+      limit: tier === "free" ? 10 : limit,
     });
 
     return {

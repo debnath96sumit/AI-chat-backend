@@ -16,6 +16,7 @@ import { MediaRepositoryModule } from '@modules/media/repositories/media.reposit
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { UsageModule } from './modules/usage/usage.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     LLMModule,
     MediaModule,
     MediaRepositoryModule,
-    SubscriptionModule
+    SubscriptionModule,
+    UsageModule
   ],
   providers: [
     {

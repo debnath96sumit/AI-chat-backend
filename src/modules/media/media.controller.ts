@@ -8,8 +8,9 @@ import {
   Param,
   UploadedFile,
   Delete,
+  UseGuards,
 } from "@nestjs/common";
-import { ApiConsumes, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import {
   SingleFileInterceptor,
   MultiFileInterceptor,
@@ -17,6 +18,8 @@ import {
 } from "@common/interceptors/files.interceptor";
 import { MediaService } from "./media.service";
 import { SingleFileUploadDTO, MultipleFileUploadDTO } from "./dto/media.dto";
+import { AuthGuard } from "@nestjs/passport";
+import { ChatFileUploadInterceptor } from "@common/interceptors/chat-file.interceptor";
 
 @ApiTags("Media")
 @Controller({ path: "media", version: "1" })
@@ -35,12 +38,17 @@ export class MediaController {
   }
 
   @Post("upload-chat-file")
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @HttpCode(200)
   @ApiConsumes("multipart/form-data")
-  @UseInterceptors(ChatFileInterceptor("chat-files", "file"))
+  @UseInterceptors(
+    ChatFileUploadInterceptor,
+    ChatFileInterceptor("chat-files", "file")
+  )
   async uploadChatFile(
     @UploadedFile() file: Express.Multer.File,
-    @Body() dto: SingleFileUploadDTO,
+    @Body() dto: SingleFileUploadDTO
   ) {
     return await this.mediaService.uploadSingleFile(file, dto);
   }

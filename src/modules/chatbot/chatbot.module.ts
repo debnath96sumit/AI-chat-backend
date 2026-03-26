@@ -10,6 +10,8 @@ import { MessageRepository } from './repositories/message.repository';
 import { AuthModule } from '@auth/auth.module';
 import { LLMModule } from '@modules/llm/llm.module';
 import { FileExtractionService } from './file-extraction.service';
+import { UsageModule } from '@modules/usage/usage.module';
+import { SubscriptionModule } from '@modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { FileExtractionService } from './file-extraction.service';
     ]),
     AuthModule,
     LLMModule,
+    UsageModule,
+    SubscriptionModule
   ],
   controllers: [ChatbotController],
   providers: [ChatbotService, ChatRepository, MessageRepository, FileExtractionService],

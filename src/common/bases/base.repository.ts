@@ -125,6 +125,14 @@ export class BaseRepository<T> {
         );
     }
 
+    async _upsert(filter: FilterQuery<T>, data: UpdateQuery<T>): Promise<T> {
+        return await this.model.findOneAndUpdate(
+            filter,
+            { $setOnInsert: data },
+            { upsert: true, new: true },
+        );
+    }
+
     async insertMany(data: Partial<T>[]): Promise<T[]> {
         return (await this.model.insertMany(data)) as unknown as T[];
     }
