@@ -1,4 +1,4 @@
 export type JwtPayloadType = {
-    id: string;
-    iat?: string;
+  id: string;
+  iat?: string;
 };

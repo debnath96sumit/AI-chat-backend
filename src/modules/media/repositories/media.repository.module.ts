@@ -1,7 +1,7 @@
-import { Global, Module } from "@nestjs/common";
-import { MediaRepository } from "./media.repository";
-import { MongooseModule } from "@nestjs/mongoose";
-import { Media, MediaSchema } from "../schemas/media.schema";
+import { Global, Module } from '@nestjs/common';
+import { MediaRepository } from './media.repository';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Media, MediaSchema } from '../schemas/media.schema';
 
 @Global()
 @Module({

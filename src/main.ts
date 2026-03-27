@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { ConfigService } from "@nestjs/config";
+import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -13,7 +13,7 @@ async function bootstrap() {
   });
   const configService = app.get(ConfigService);
   app.enableCors({
-    origin: [configService.getOrThrow<string>("FRONTEND_URL")],
+    origin: [configService.getOrThrow<string>('FRONTEND_URL')],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
@@ -25,7 +25,7 @@ async function bootstrap() {
   );
   app.setGlobalPrefix('/api');
   app.useGlobalPipes(new ValidationPipe());
-  app.useStaticAssets(join(__dirname, "..", "public"));
+  app.useStaticAssets(join(__dirname, '..', 'public'));
   app.enableVersioning({
     type: VersioningType.URI,
   });
@@ -62,7 +62,9 @@ async function bootstrap() {
       {
         ...documentAdmin,
         paths: Object.fromEntries(
-          Object.entries(documentAdmin.paths).filter(([key]) => key.includes('admin')),
+          Object.entries(documentAdmin.paths).filter(([key]) =>
+            key.includes('admin'),
+          ),
         ),
       },
       {
@@ -78,7 +80,9 @@ async function bootstrap() {
       {
         ...documentApi,
         paths: Object.fromEntries(
-          Object.entries(documentAdmin.paths).filter(([key]) => !key.includes('admin')),
+          Object.entries(documentAdmin.paths).filter(
+            ([key]) => !key.includes('admin'),
+          ),
         ),
       },
       {
@@ -89,9 +93,15 @@ async function bootstrap() {
     );
   }
   await app.listen(process.env.PORT ?? 3000, () => {
-    console.log(`Application is running on port http://localhost:${process.env.PORT ?? 3000}`);
-    console.log(`Admin Panel API: http://localhost:${process.env.PORT ?? 3000}/apidoc/v1/admin`);
-    console.log(`User Panel API: http://localhost:${process.env.PORT ?? 3000}/apidoc/v1/user`);
+    console.log(
+      `Application is running on port http://localhost:${process.env.PORT ?? 3000}`,
+    );
+    console.log(
+      `Admin Panel API: http://localhost:${process.env.PORT ?? 3000}/apidoc/v1/admin`,
+    );
+    console.log(
+      `User Panel API: http://localhost:${process.env.PORT ?? 3000}/apidoc/v1/user`,
+    );
   });
 }
 bootstrap().catch((err) => {

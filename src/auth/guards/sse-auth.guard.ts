@@ -22,9 +22,9 @@ export class SseAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    
+
     let token = request.query?.token as string;
-    
+
     if (!token) {
       const authHeader = request.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -56,20 +56,22 @@ export class SseAuthGuard implements CanActivate {
       }
 
       const user = await this.userRepository.getUserDetailsJwtAuth(payload.id);
-      
+
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
-      
+
       request['user'] = user;
-      
+
       return true;
     } catch (error) {
       // Token is invalid, expired, malformed, or revoked
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Invalid or expired authentication token');
+      throw new UnauthorizedException(
+        'Invalid or expired authentication token',
+      );
     }
   }
 }

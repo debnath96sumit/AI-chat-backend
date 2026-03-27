@@ -1,6 +1,6 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Exclude } from "class-transformer";
-import { HydratedDocument } from "mongoose";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Exclude } from 'class-transformer';
+import { HydratedDocument } from 'mongoose';
 
 @Schema({ timestamps: true, versionKey: false })
 export class Role {
@@ -10,7 +10,7 @@ export class Role {
   @Prop({ type: String, required: true })
   roleDisplayName: string;
 
-  @Prop({ type: String, default: "Active", enum: ["Active", "Inactive"] })
+  @Prop({ type: String, default: 'Active', enum: ['Active', 'Inactive'] })
   status: string;
 
   @Exclude()

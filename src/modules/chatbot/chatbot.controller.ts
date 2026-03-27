@@ -1,7 +1,25 @@
-import { Controller, Post, Body, Sse, Param, UseGuards, Get, Patch, Query, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Sse,
+  Param,
+  UseGuards,
+  Get,
+  Patch,
+  Query,
+  Delete,
+} from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
 import { RenameChatDto, SendMessageDto } from './dto/create-message.dto';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { LoginUser } from '@common/decorator/login-user.decorator';
 import type { AuthenticatedUser } from '@auth/types/authenticated-user.type';
@@ -12,7 +30,7 @@ import { Throttle } from '@nestjs/throttler';
 @ApiBearerAuth()
 @Controller({ path: 'chat', version: '1' })
 export class ChatbotController {
-  constructor(private readonly chatbotService: ChatbotService) { }
+  constructor(private readonly chatbotService: ChatbotService) {}
 
   @Throttle({ global: { ttl: 60000, limit: 10 } })
   @Sse('stream/:chatId')
@@ -23,7 +41,7 @@ export class ChatbotController {
     name: 'token',
     required: true,
     description: 'JWT authentication token',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   streamChat(
     @LoginUser() user: AuthenticatedUser,
@@ -60,11 +78,7 @@ export class ChatbotController {
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.chatbotService.getUserChats(
-      user,
-      Number(page),
-      Number(limit),
-    );
+    return this.chatbotService.getUserChats(user, Number(page), Number(limit));
   }
 
   @Get(':chatId')
@@ -95,11 +109,7 @@ export class ChatbotController {
     @Param('chatId') chatId: string,
     @Body() dto: RenameChatDto,
   ) {
-    return this.chatbotService.renameChat(
-      user,
-      chatId,
-      dto,
-    );
+    return this.chatbotService.renameChat(user, chatId, dto);
   }
 
   @Delete('delete/:chatId')

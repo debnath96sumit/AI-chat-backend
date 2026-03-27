@@ -1,21 +1,18 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
-import { ApiResponse } from "src/common/types/api-response.type";
-import { MediaRepository } from "./repositories/media.repository";
-import {
-  SingleFileUploadDTO,
-  MultipleFileUploadDTO,
-} from "./dto/media.dto";
-import { Types } from "mongoose";
-import { existsSync, unlinkSync } from "fs";
-import { ConfigService } from "@nestjs/config";
-import { MediaDocument } from "./schemas/media.schema";
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { ApiResponse } from 'src/common/types/api-response.type';
+import { MediaRepository } from './repositories/media.repository';
+import { SingleFileUploadDTO, MultipleFileUploadDTO } from './dto/media.dto';
+import { Types } from 'mongoose';
+import { existsSync, unlinkSync } from 'fs';
+import { ConfigService } from '@nestjs/config';
+import { MediaDocument } from './schemas/media.schema';
 
 @Injectable()
 export class MediaService {
   constructor(
     private mediaRepository: MediaRepository,
     private configService: ConfigService,
-  ) { }
+  ) {}
 
   async uploadSingleFile(
     file: any,
@@ -24,18 +21,18 @@ export class MediaService {
     if (!file) {
       return {
         statusCode: HttpStatus.BAD_REQUEST,
-        message: "Please upload a file.",
+        message: 'Please upload a file.',
       };
     }
 
-    const backend_url = this.configService.get("BACKEND_URL");
-    const folderPath = file.destination.replace("./public/uploads/", "");
+    const backend_url = this.configService.get('BACKEND_URL');
+    const folderPath = file.destination.replace('./public/uploads/', '');
     const mediaData = {
       originalName: file.originalname,
       fileName: file.filename,
       folder: folderPath,
       mimetype: file.mimetype,
-      encoding: file.encoding || "",
+      encoding: file.encoding || '',
       size: file.size,
       url: `${backend_url}/uploads/${folderPath}/${file.filename}`,
       path: file.path,
@@ -45,13 +42,13 @@ export class MediaService {
     if (saveFile && saveFile._id) {
       return {
         statusCode: HttpStatus.OK,
-        message: "File uploaded successfully.",
+        message: 'File uploaded successfully.',
         data: saveFile,
       };
     } else {
       return {
         statusCode: HttpStatus.BAD_REQUEST,
-        message: "Something went wrong.",
+        message: 'Something went wrong.',
       };
     }
   }
@@ -63,23 +60,23 @@ export class MediaService {
     if (!files || files.length === 0) {
       return {
         statusCode: HttpStatus.BAD_REQUEST,
-        message: "Please upload at least one file.",
+        message: 'Please upload at least one file.',
       };
     }
-    console.log("dto", dto, files);
+    console.log('dto', dto, files);
 
-    const backend_url = this.configService.get("BACKEND_URL");
+    const backend_url = this.configService.get('BACKEND_URL');
     const savedFiles: MediaDocument[] = [];
 
     for (const file of files) {
-      const folderPath = file.destination.replace("./public/uploads/", "");
+      const folderPath = file.destination.replace('./public/uploads/', '');
 
       const mediaData = {
         originalName: file.originalname,
         fileName: file.filename,
         folder: folderPath,
         mimetype: file.mimetype,
-        encoding: file.encoding || "",
+        encoding: file.encoding || '',
         size: file.size,
         url: `${backend_url}/uploads/${folderPath}/${file.filename}`,
         path: file.path,
@@ -91,7 +88,7 @@ export class MediaService {
 
     return {
       statusCode: HttpStatus.OK,
-      message: "Files uploaded successfully.",
+      message: 'Files uploaded successfully.',
       data: savedFiles,
     };
   }
@@ -104,7 +101,7 @@ export class MediaService {
     if (!mediaDetails) {
       return {
         statusCode: HttpStatus.BAD_REQUEST,
-        message: "File not found.",
+        message: 'File not found.',
       };
     }
 
@@ -122,13 +119,13 @@ export class MediaService {
     if (deleteFile && deleteFile._id) {
       return {
         statusCode: HttpStatus.OK,
-        message: "File deleted successfully.",
+        message: 'File deleted successfully.',
         data: deleteFile,
       };
     } else {
       return {
         statusCode: HttpStatus.BAD_REQUEST,
-        message: "Something went wrong.",
+        message: 'Something went wrong.',
       };
     }
   }

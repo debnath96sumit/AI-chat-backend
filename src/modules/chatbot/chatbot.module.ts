@@ -23,9 +23,14 @@ import { SubscriptionModule } from '@modules/subscription/subscription.module';
     AuthModule,
     LLMModule,
     UsageModule,
-    SubscriptionModule
+    SubscriptionModule,
   ],
   controllers: [ChatbotController],
-  providers: [ChatbotService, ChatRepository, MessageRepository, FileExtractionService],
+  providers: [
+    ChatbotService,
+    ChatRepository,
+    MessageRepository,
+    FileExtractionService,
+  ],
 })
-export class ChatbotModule { }
+export class ChatbotModule {}

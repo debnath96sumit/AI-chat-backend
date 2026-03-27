@@ -8,4 +8,4 @@ import { HuggingFaceProvider } from './providers/huggingFace.provider';
   providers: [LLMService, GroqProvider, GeminiProvider, HuggingFaceProvider],
   exports: [LLMService],
 })
-export class LLMModule { }
+export class LLMModule {}

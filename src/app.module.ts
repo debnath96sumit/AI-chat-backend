@@ -35,7 +35,7 @@ import { UsageModule } from './modules/usage/usage.module';
     MediaModule,
     MediaRepositoryModule,
     SubscriptionModule,
-    UsageModule
+    UsageModule,
   ],
   providers: [
     {
@@ -44,4 +44,4 @@ import { UsageModule } from './modules/usage/usage.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,5 +1,5 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import mongoose from "mongoose";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import mongoose from 'mongoose';
 
 export type MediaDocument = mongoose.HydratedDocument<Media>;
 
@@ -11,13 +11,13 @@ export class Media {
   @Prop({ type: String, required: true })
   fileName: string;
 
-  @Prop({ type: String, default: "" })
+  @Prop({ type: String, default: '' })
   folder: string;
 
   @Prop({ type: String, required: true })
   mimetype: string;
 
-  @Prop({ type: String, default: "" })
+  @Prop({ type: String, default: '' })
   encoding: string;
 
   @Prop({ type: Number, required: true })

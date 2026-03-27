@@ -1,4 +1,11 @@
-import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpStatus,
+  Injectable,
+  MessageEvent,
+  NotFoundException,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '@common/types/api-response.type';
 import { ChatRepository } from './repositories/chat.repository';
@@ -16,7 +23,6 @@ import { SubscriptionService } from '@modules/subscription/subscription.service'
 import { SubscriptionTier } from '@common/enum/subscription-tier.enum';
 @Injectable()
 export class ChatbotService {
-
   constructor(
     private readonly chatRepository: ChatRepository,
     private readonly messageRepository: MessageRepository,
@@ -25,29 +31,41 @@ export class ChatbotService {
     private readonly fileExtractionService: FileExtractionService,
     private readonly usageService: UsageService,
     private readonly subscriptionService: SubscriptionService,
-  ) { }
+  ) {}
 
   async createUserMessage(
     user: AuthenticatedUser,
     dto: SendMessageDto,
   ): Promise<ApiResponse> {
-    const tier = await this.subscriptionService.getUserTier(user._id.toString());
-    const FREE_PROVIDER = "groq";
+    const tier = await this.subscriptionService.getUserTier(
+      user._id.toString(),
+    );
+    const FREE_PROVIDER = 'groq';
     if (tier === SubscriptionTier.FREE && dto.provider !== FREE_PROVIDER) {
-      throw new ForbiddenException("Upgrade to Pro to access all models.");
+      throw new ForbiddenException('Upgrade to Pro to access all models.');
     }
 
-    const { provider, model } = this.llmService.resolve(dto.provider, dto.modelId);
+    const { provider, model } = this.llmService.resolve(
+      dto.provider,
+      dto.modelId,
+    );
 
     let extractedContent: string | undefined;
-    let attachments: Array<{ mediaId: Types.ObjectId; url: string; originalName: string; mimetype: string }> = [];
+    let attachments: Array<{
+      mediaId: Types.ObjectId;
+      url: string;
+      originalName: string;
+      mimetype: string;
+    }> = [];
     if (dto.attachment) {
       const media = await this.mediaRepository.getById(
         new Types.ObjectId(dto.attachment.mediaId),
       );
 
       if (!media || media.isDeleted) {
-        throw new BadRequestException('Attached file not found. Please re-upload.');
+        throw new BadRequestException(
+          'Attached file not found. Please re-upload.',
+        );
       }
 
       const supported = ['application/pdf', 'text/plain'];
@@ -62,12 +80,14 @@ export class ChatbotService {
         media.mimetype,
       );
 
-      attachments = [{
-        mediaId: media._id,
-        url: media.url,
-        originalName: media.originalName,
-        mimetype: media.mimetype,
-      }];
+      attachments = [
+        {
+          mediaId: media._id,
+          url: media.url,
+          originalName: media.originalName,
+          mimetype: media.mimetype,
+        },
+      ];
     }
 
     let chat;
@@ -95,7 +115,10 @@ export class ChatbotService {
       const modelChanged = chat.modelId !== model;
 
       if (providerChanged || modelChanged) {
-        chat = await this.chatRepository.updateById({ provider, modelId: model }, chat._id);
+        chat = await this.chatRepository.updateById(
+          { provider, modelId: model },
+          chat._id,
+        );
       }
     }
 
@@ -121,6 +144,23 @@ export class ChatbotService {
   ): Promise<Observable<MessageEvent>> {
     return new Observable<MessageEvent>((subscriber) => {
       void (async () => {
+        const send = (payload: any) => {
+          subscriber.next({
+            data: JSON.stringify(payload),
+          } as MessageEvent);
+        };
+
+        try {
+          const tier = await this.subscriptionService.getUserTier(
+            user._id.toString(),
+          );
+          await this.usageService.canUseTokens(user._id.toString(), tier);
+        } catch (err) {
+          send({ type: 'error', message: err.message });
+          subscriber.complete();
+          return;
+        }
+
         let fullAssistantResponse = '';
         let finalUsage: any = null;
 
@@ -133,17 +173,29 @@ export class ChatbotService {
 
           if (!chat) throw new NotFoundException('Chat not found');
 
-          const provider = (chat.provider ?? 'groq') as modelsConstant.LLMProviderKey;
-          const modelId = chat.modelId ?? modelsConstant.getDefaultModel(provider);
+          const provider = (chat.provider ??
+            'groq') as modelsConstant.LLMProviderKey;
+          const modelId =
+            chat.modelId ?? modelsConstant.getDefaultModel(provider);
 
-          const history = await this.messageRepository.getMessageHistory(chat._id);
+          const history = await this.messageRepository.getMessageHistory(
+            chat._id,
+          );
           const formattedHistory = this.buildHistory(history);
 
-          for await (const chunk of this.llmService.stream(provider, modelId, formattedHistory)) {
+          for await (const chunk of this.llmService.stream(
+            provider,
+            modelId,
+            formattedHistory,
+          )) {
             if (chunk.content) {
               fullAssistantResponse += chunk.content;
-              subscriber.next({ data: chunk.content } as MessageEvent);
+              send({
+                type: 'chunk',
+                content: chunk.content,
+              });
             }
+
             if (chunk.usage) {
               finalUsage = chunk.usage;
             }
@@ -156,11 +208,20 @@ export class ChatbotService {
             content: fullAssistantResponse,
             tokenUsage: finalUsage,
           });
-          await this.usageService.incrementTokenUsage(user._id, msg.tokenUsage?.totalTokens || 0);
-          subscriber.next({ data: '__END__' } as MessageEvent);
+
+          await this.usageService.incrementTokenUsage(
+            user._id,
+            msg.tokenUsage?.totalTokens || 0,
+          );
+
+          send({ type: 'end' });
           subscriber.complete();
         } catch (error) {
-          subscriber.error(error);
+          send({
+            type: 'error',
+            message: error.message || 'Something went wrong',
+          });
+          subscriber.complete();
         }
       })();
     });
@@ -169,14 +230,14 @@ export class ChatbotService {
   private buildHistory(
     history: MessageDocument[],
   ): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
-    const result: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [];
+    const result: Array<{
+      role: 'user' | 'assistant' | 'system';
+      content: string;
+    }> = [];
 
     for (const msg of history) {
       // If this user message has extracted file content, prepend a system message
-      if (
-        msg.role === MessageRole.USER &&
-        msg.extractedContent?.trim()
-      ) {
+      if (msg.role === MessageRole.USER && msg.extractedContent?.trim()) {
         const fileName = msg.attachments?.[0]?.originalName ?? 'uploaded file';
         result.push({
           role: 'system',
@@ -202,7 +263,9 @@ export class ChatbotService {
   ): Promise<ApiResponse> {
     const userId = user._id;
     if (!userId) throw new BadRequestException('Invalid user details.');
-    const tier = await this.subscriptionService.getUserTier(user._id.toString());
+    const tier = await this.subscriptionService.getUserTier(
+      user._id.toString(),
+    );
     const chats = await this.chatRepository.getAllPaginate({
       filter: { userId },
       page,
@@ -220,7 +283,7 @@ export class ChatbotService {
     user: AuthenticatedUser,
     chatId: string,
     page: number,
-    limit: number
+    limit: number,
   ): Promise<ApiResponse> {
     const chat = await this.chatRepository.getByField({
       _id: chatId,
@@ -251,7 +314,7 @@ export class ChatbotService {
   async renameChat(
     user: AuthenticatedUser,
     chatId: string,
-    dto: RenameChatDto
+    dto: RenameChatDto,
   ): Promise<ApiResponse> {
     const chat = await this.chatRepository.getByField({
       _id: chatId,
@@ -262,9 +325,12 @@ export class ChatbotService {
     if (!chat) {
       throw new NotFoundException('Chat not found');
     }
-    const updated = await this.chatRepository.updateById({
-      title: dto.title
-    }, chat._id);
+    const updated = await this.chatRepository.updateById(
+      {
+        title: dto.title,
+      },
+      chat._id,
+    );
 
     return {
       statusCode: updated ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR,
@@ -272,7 +338,10 @@ export class ChatbotService {
     };
   }
 
-  async deleteChat(user: AuthenticatedUser, chatId: string): Promise<ApiResponse> {
+  async deleteChat(
+    user: AuthenticatedUser,
+    chatId: string,
+  ): Promise<ApiResponse> {
     const chat = await this.chatRepository.getByField({
       _id: chatId,
       userId: user._id,
@@ -326,10 +395,6 @@ export class ChatbotService {
   }
 
   private cleanTitle(title: string): string {
-    return title
-      .replace(/["']/g, '')
-      .replace(/\.$/, '')
-      .trim()
-      .slice(0, 60);
+    return title.replace(/["']/g, '').replace(/\.$/, '').trim().slice(0, 60);
   }
 }

@@ -1,7 +1,7 @@
-import { Global, Module } from "@nestjs/common";
-import { MongooseModule } from "@nestjs/mongoose";
-import { Role, RoleSchema } from "../schemas/role.schema";
-import { RoleRepository } from "./role.repository";
+import { Global, Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Role, RoleSchema } from '../schemas/role.schema';
+import { RoleRepository } from './role.repository';
 
 @Global()
 @Module({

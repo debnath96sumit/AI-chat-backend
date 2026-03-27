@@ -1,6 +1,6 @@
-import { Global, Module } from "@nestjs/common";
-import { MongooseModule } from "@nestjs/mongoose";
-import { Role, RoleSchema } from "./schemas/role.schema";
+import { Global, Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Role, RoleSchema } from './schemas/role.schema';
 
 @Global()
 @Module({
@@ -8,4 +8,4 @@ import { Role, RoleSchema } from "./schemas/role.schema";
     MongooseModule.forFeature([{ name: Role.name, schema: RoleSchema }]),
   ],
 })
-export class RoleModule { }
+export class RoleModule {}

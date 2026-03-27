@@ -3,11 +3,11 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { Types } from "mongoose";
-import { UserRepository } from "@modules/user/repositories/user.repository";
-import Stripe from "stripe";
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Types } from 'mongoose';
+import { UserRepository } from '@modules/user/repositories/user.repository';
+import Stripe from 'stripe';
 
 interface createSubscriptionCheckout {
   userId: string;
@@ -20,10 +20,10 @@ interface createSubscriptionCheckout {
 @Injectable()
 export class StripeHelper {
   constructor(
-    @Inject("StripeToken") private readonly stripe: Stripe,
+    @Inject('StripeToken') private readonly stripe: Stripe,
     private configService: ConfigService,
     private userRepository: UserRepository,
-  ) { }
+  ) {}
 
   /**
    * @Method createCustomer
@@ -43,11 +43,18 @@ export class StripeHelper {
 
   async createSubscriptionCheckout(data: createSubscriptionCheckout) {
     try {
-      const { userId, planId, stripeCustomerId, stripePriceId, successUrl, cancelUrl } = data;
+      const {
+        userId,
+        planId,
+        stripeCustomerId,
+        stripePriceId,
+        successUrl,
+        cancelUrl,
+      } = data;
       const session = await this.stripe.checkout.sessions.create({
         customer: stripeCustomerId,
-        payment_method_types: ["card"],
-        mode: "subscription",
+        payment_method_types: ['card'],
+        mode: 'subscription',
         line_items: [
           {
             price: stripePriceId,
@@ -56,7 +63,7 @@ export class StripeHelper {
         ],
         metadata: {
           userId,
-          planId
+          planId,
         },
         success_url: successUrl,
         cancel_url: cancelUrl,
@@ -79,17 +86,25 @@ export class StripeHelper {
       );
       return subscription;
     } catch (error) {
-      console.error("Error canceling subscription:", error);
+      console.error('Error canceling subscription:', error);
       return null;
     }
   }
 
   constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event {
-    const webhookSecret = this.configService.getOrThrow<string>("STRIPE_WEBHOOK_SECRET");
+    const webhookSecret = this.configService.getOrThrow<string>(
+      'STRIPE_WEBHOOK_SECRET',
+    );
     try {
-      return this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      return this.stripe.webhooks.constructEvent(
+        rawBody,
+        signature,
+        webhookSecret,
+      );
     } catch (err) {
-      throw new BadRequestException(`Webhook signature verification failed: ${err.message}`);
+      throw new BadRequestException(
+        `Webhook signature verification failed: ${err.message}`,
+      );
     }
   }
 }

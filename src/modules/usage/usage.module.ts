@@ -8,11 +8,11 @@ import { SubscriptionModule } from '../subscription/subscription.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: UsageRecord.name, schema: UsageRecordSchema }
+      { name: UsageRecord.name, schema: UsageRecordSchema },
     ]),
     SubscriptionModule,
   ],
   providers: [UsageService, UsageRepository],
   exports: [UsageService],
 })
-export class UsageModule { }
+export class UsageModule {}

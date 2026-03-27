@@ -1,45 +1,45 @@
-import { BadRequestException } from "@nestjs/common";
-import { FilesInterceptor, FileInterceptor } from "@nestjs/platform-express";
-import { Request } from "express";
-import { existsSync, mkdirSync } from "fs";
-import { diskStorage } from "multer";
-import { extname } from "path";
+import { BadRequestException } from '@nestjs/common';
+import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { Request } from 'express';
+import { existsSync, mkdirSync } from 'fs';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 export const normalizeFilename = (str: string): string => {
-  const originalName = str.replace(/\s/g, "_");
-  const extension = originalName.split(".").pop();
+  const originalName = str.replace(/\s/g, '_');
+  const extension = originalName.split('.').pop();
   const timestamp = Date.now();
 
   if (!extension) {
-    throw new Error("Failed to determine file extension");
+    throw new Error('Failed to determine file extension');
   }
 
   return `${timestamp}_${originalName}`;
 };
 
 export const allowedMimeTypes = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/gif",
-  "application/pdf",
-  "text/csv",
-  "video/mp4",
-  "video/mpeg",
-  "application/vnd.ms-excel", // .xls
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'application/pdf',
+  'text/csv',
+  'video/mp4',
+  'video/mpeg',
+  'application/vnd.ms-excel', // .xls
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
 ];
 const allowedExtensions = [
-  ".jpeg",
-  ".jpg",
-  ".png",
-  ".gif",
-  ".pdf",
-  ".csv",
-  ".mp4",
-  ".xls",
-  ".xlsx",
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.gif',
+  '.pdf',
+  '.csv',
+  '.mp4',
+  '.xls',
+  '.xlsx',
 ];
 
 const CHAT_ALLOWED_MIMETYPES = ['application/pdf', 'text/plain'];
@@ -53,8 +53,8 @@ export const SingleFileInterceptor = (directory: string, fieldName: string) =>
     },
     storage: diskStorage({
       destination(_req: Request, _file: Express.Multer.File, callback) {
-        if (!existsSync("./public")) mkdirSync("./public");
-        if (!existsSync("./public/uploads")) mkdirSync("./public/uploads");
+        if (!existsSync('./public')) mkdirSync('./public');
+        if (!existsSync('./public/uploads')) mkdirSync('./public/uploads');
         if (!existsSync(`./public/uploads/${directory}`))
           mkdirSync(`./public/uploads/${directory}`);
 
@@ -74,7 +74,7 @@ export const SingleFileInterceptor = (directory: string, fieldName: string) =>
 
       const ext = extname(file.originalname).toLowerCase();
       if (!allowedExtensions.includes(ext)) {
-        return callback(new Error("Invalid file extension!"), false);
+        return callback(new Error('Invalid file extension!'), false);
       }
 
       callback(null, true);
@@ -92,8 +92,8 @@ export const MultiFileInterceptor = (
     },
     storage: diskStorage({
       destination(_req: Request, _file: Express.Multer.File, callback) {
-        if (!existsSync("./public")) mkdirSync("./public");
-        if (!existsSync("./public/uploads")) mkdirSync("./public/uploads");
+        if (!existsSync('./public')) mkdirSync('./public');
+        if (!existsSync('./public/uploads')) mkdirSync('./public/uploads');
         if (!existsSync(`./public/uploads/${directory}`))
           mkdirSync(`./public/uploads/${directory}`);
 
@@ -113,13 +113,12 @@ export const MultiFileInterceptor = (
 
       const ext = extname(file.originalname).toLowerCase();
       if (!allowedExtensions.includes(ext)) {
-        return callback(new Error("Invalid file extension!"), false);
+        return callback(new Error('Invalid file extension!'), false);
       }
 
       callback(null, true);
     },
   });
-
 
 export const ChatFileInterceptor = (directory: string, fieldName: string) =>
   FileInterceptor(fieldName, {
@@ -128,8 +127,8 @@ export const ChatFileInterceptor = (directory: string, fieldName: string) =>
     },
     storage: diskStorage({
       destination(_req: Request, _file: Express.Multer.File, callback) {
-        if (!existsSync("./public")) mkdirSync("./public");
-        if (!existsSync("./public/uploads")) mkdirSync("./public/uploads");
+        if (!existsSync('./public')) mkdirSync('./public');
+        if (!existsSync('./public/uploads')) mkdirSync('./public/uploads');
         if (!existsSync(`./public/uploads/${directory}`))
           mkdirSync(`./public/uploads/${directory}`);
 
@@ -149,7 +148,7 @@ export const ChatFileInterceptor = (directory: string, fieldName: string) =>
 
       const ext = extname(file.originalname).toLowerCase();
       if (!CHAT_ALLOWED_EXTENSIONS.includes(ext)) {
-        return callback(new Error("Invalid file extension!"), false);
+        return callback(new Error('Invalid file extension!'), false);
       }
 
       callback(null, true);

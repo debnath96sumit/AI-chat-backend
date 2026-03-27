@@ -1,10 +1,20 @@
 import * as modelsConstant from '@modules/llm/constants/models.constant';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import {
+  IsEnum,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 
 export class AttachmentDto {
-  @ApiProperty({ description: 'Media document _id returned from /media/upload' })
+  @ApiProperty({
+    description: 'Media document _id returned from /media/upload',
+  })
   @IsMongoId()
   mediaId: string;
 
@@ -44,7 +54,8 @@ export class SendMessageDto {
   provider?: modelsConstant.LLMProviderKey;
 
   @ApiPropertyOptional({
-    description: 'Model ID for the chosen provider. Defaults to provider\'s default model.',
+    description:
+      "Model ID for the chosen provider. Defaults to provider's default model.",
     example: 'llama-3.3-70b-versatile',
   })
   @IsOptional()
@@ -52,7 +63,8 @@ export class SendMessageDto {
   modelId?: string;
 
   @ApiPropertyOptional({
-    description: 'One attachment from a prior /media/upload call. Only one file per message supported.',
+    description:
+      'One attachment from a prior /media/upload call. Only one file per message supported.',
     type: AttachmentDto,
   })
   @IsOptional()

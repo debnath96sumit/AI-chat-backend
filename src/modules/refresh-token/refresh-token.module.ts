@@ -1,10 +1,10 @@
-import { Global, Module } from "@nestjs/common";
-import { MongooseModule } from "@nestjs/mongoose";
+import { Global, Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import {
   RefreshToken,
   RefreshTokenSchema,
-} from "./schemas/refresh-token.schema";
-import { RefreshTokenRepository } from "./repository/refresh-token.repository";
+} from './schemas/refresh-token.schema';
+import { RefreshTokenRepository } from './repository/refresh-token.repository';
 
 @Global()
 @Module({
