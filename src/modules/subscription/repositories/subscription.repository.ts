@@ -60,7 +60,6 @@ export class SubscriptionRepository extends BaseRepository<SubscriptionDocument>
             const currentDate = new Date();
             const subscription = await this.getByField({
                 userId: new Types.ObjectId(userId),
-                isDeleted: false,
                 status: { $in: ["active", "trialing", "past_due"] },
                 currentPeriodEnd: { $gte: currentDate },
             });
@@ -70,5 +69,9 @@ export class SubscriptionRepository extends BaseRepository<SubscriptionDocument>
             console.log(error);
             return null;
         }
+    }
+
+    async hasActiveSubscription(userId: string): Promise<boolean> {
+        return !!(await this.findActiveSubscription(userId));
     }
 }

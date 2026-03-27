@@ -7,14 +7,16 @@ import { ChangePasswordDTO, UpdateProfileApiDTO } from './dto/user.dto';
 import { ConfigService } from '@nestjs/config';
 import { MediaRepository } from '@modules/media/repositories';
 import { existsSync, unlinkSync } from 'fs';
+import { SubscriptionRepository } from '@modules/subscription/repositories/subscription.repository';
 
 @Injectable()
 export class UserService {
 
     constructor(
-        private userRepository: UserRepository,
+        private readonly userRepository: UserRepository,
         private readonly configService: ConfigService,
         private readonly mediaRepository: MediaRepository,
+        private readonly subscriptionRepository: SubscriptionRepository,
     ) { }
     async profileDetails(user: AuthenticatedUser): Promise<ApiResponse> {
         if (!user) {
@@ -28,12 +30,16 @@ export class UserService {
             _id: new mongoose.Types.ObjectId(user._id),
             isDeleted: false,
         });
+        const hasActiveSubscription = await this.subscriptionRepository.hasActiveSubscription(user._id.toString());
 
         return userDetails
             ? {
                 statusCode: HttpStatus.OK,
                 message: "Profile details retrieved successfully.",
-                data: userDetails,
+                data: {
+                    ...userDetails,
+                    hasActiveSubscription,
+                },
             }
             : {
                 statusCode: HttpStatus.NOT_FOUND,
