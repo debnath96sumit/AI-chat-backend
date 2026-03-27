@@ -6,15 +6,15 @@ import { SubscriptionTier } from '@common/enum/subscription-tier.enum';
 
 @Injectable()
 export class UsageService {
-  constructor(private readonly usageRepo: UsageRepository) {}
+  constructor(private readonly usageRepo: UsageRepository) { }
 
   private readonly LIMITS: Record<
     SubscriptionTier,
     { fileUploads: number; tokensPerDay: number }
   > = {
-    [SubscriptionTier.FREE]: { fileUploads: 1, tokensPerDay: 100 },
-    [SubscriptionTier.PRO]: { fileUploads: 5, tokensPerDay: 30000 },
-  };
+      [SubscriptionTier.FREE]: { fileUploads: 1, tokensPerDay: 3000 },
+      [SubscriptionTier.PRO]: { fileUploads: 5, tokensPerDay: 30000 },
+    };
 
   async getTodayRecord(userId: string): Promise<UsageRecord> {
     const date = new Date().toISOString().split('T')[0];
