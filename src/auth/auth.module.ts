@@ -6,8 +6,10 @@ import { JwtStrategy } from './strategy/auth.strategy';
 import { SseAuthGuard } from './guards/sse-auth.guard';
 import { GithubStrategy } from './strategy/github.strategy';
 import { GithubAuthGuard } from './guards/github-auth.guard';
+import { SubscriptionModule } from '@modules/subscription/subscription.module';
 
 @Module({
+  imports: [SubscriptionModule],
   controllers: [AuthController],
   providers: [AuthService, JwtService, JwtStrategy, SseAuthGuard, GithubStrategy, GithubAuthGuard],
   exports: [JwtStrategy, AuthService, SseAuthGuard, JwtService, GithubStrategy, GithubAuthGuard],

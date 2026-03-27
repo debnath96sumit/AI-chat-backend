@@ -2,14 +2,15 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { UsageRepository } from './repositories/usage.repository';
 import { UsageRecord } from './schemas/usage-record.schema';
 import { Types } from 'mongoose';
+import { SubscriptionTier } from '@common/enum/subscription-tier.enum';
 
 @Injectable()
 export class UsageService {
     constructor(private readonly usageRepo: UsageRepository) { }
 
-    private readonly LIMITS = {
-        free: { fileUploads: 1, tokensPerDay: 10000 },
-        pro: { fileUploads: 5, tokensPerDay: 30000 },
+    private readonly LIMITS: Record<SubscriptionTier, { fileUploads: number; tokensPerDay: number }> = {
+        [SubscriptionTier.FREE]: { fileUploads: 1, tokensPerDay: 10000 },
+        [SubscriptionTier.PRO]: { fileUploads: 5, tokensPerDay: 30000 },
     };
 
     async getTodayRecord(userId: string): Promise<UsageRecord> {
@@ -20,13 +21,13 @@ export class UsageService {
         );
     }
 
-    async canUploadFile(userId: string, tier: "free" | "pro"): Promise<void> {
+    async canUploadFile(userId: string, tier: SubscriptionTier): Promise<void> {
         const limit = this.LIMITS[tier].fileUploads;
         const record = await this.getTodayRecord(userId);
 
         if (record.fileUploadsCount >= limit) {
             throw new ForbiddenException(
-                `File upload limit reached. ${tier === "free" ? "Upgrade to Pro for more uploads." : "Daily limit reached."}`
+                `File upload limit reached. ${tier === SubscriptionTier.FREE ? "Upgrade to Pro for more uploads." : "Daily limit reached."}`
             );
         }
     }
@@ -39,12 +40,12 @@ export class UsageService {
         );
     }
 
-    async canUseTokens(userId: string, tier: "free" | "pro", tokensToAdd: number): Promise<void> {
+    async canUseTokens(userId: string, tier: SubscriptionTier, tokensToAdd: number): Promise<void> {
         const limit = this.LIMITS[tier].tokensPerDay;
         if (!limit) return;
         const record = await this.getTodayRecord(userId);
         if (record.tokenUsage + tokensToAdd > limit) {
-            throw new ForbiddenException(`${tier === "free" ? "Upgrade to Pro for more tokens." : "Daily token limit reached."}`);
+            throw new ForbiddenException(`${tier === SubscriptionTier.FREE ? "Upgrade to Pro for more tokens." : "Daily token limit reached."}`);
         }
     }
 

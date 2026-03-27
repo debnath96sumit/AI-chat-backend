@@ -15,6 +15,7 @@ import { Request } from "express";
 import { Redis } from "ioredis";
 import { REDIS_CONNECTION } from "@common/redis/redis.provider";
 import { MailerService } from "@helpers/mailer.helper";
+import { SubscriptionRepository } from '@modules/subscription/repositories/subscription.repository';
 
 interface OathUserPayload {
     id: string;
@@ -42,6 +43,7 @@ export class AuthService {
         private readonly userDeviceRepository: UserDeviceRepository,
         private readonly refreshTokenRepository: RefreshTokenRepository,
         private readonly mailerService: MailerService,
+                private readonly subscriptionRepository: SubscriptionRepository,
     ) {
         this.client = new OAuth2Client(
             this.configService.getOrThrow<string>("GOOGLE_CLIENT_ID"),
@@ -90,11 +92,16 @@ export class AuthService {
                 user._id.toString(),
                 token,
             );
+        const hasActiveSubscription = await this.subscriptionRepository.hasActiveSubscription(user._id.toString());
+
             return {
                 statusCode: HttpStatus.OK,
                 message: "Login successful",
                 data: {
-                    user,
+                    user : {
+                        ...user,
+                        hasActiveSubscription,
+                    },
                     token,
                     refreshToken,
                 },
@@ -146,11 +153,15 @@ export class AuthService {
             user._id.toString(),
             accessToken,
         );
+        const hasActiveSubscription = await this.subscriptionRepository.hasActiveSubscription(user._id.toString());
         return {
             statusCode: HttpStatus.CREATED,
             message: "User registered successfully!",
             data: {
-                user,
+                user : {
+                    ...user,
+                    hasActiveSubscription,
+                },
                 accessToken,
                 refreshToken,
             },
@@ -181,11 +192,15 @@ export class AuthService {
             checkIfExists._id.toString(),
             accessToken,
         );
+            const hasActiveSubscription = await this.subscriptionRepository.hasActiveSubscription(checkIfExists._id.toString());
         return {
             statusCode: HttpStatus.OK,
             message: "User login successful",
             data: {
-                user: userDetails,
+                user: {
+                    ...userDetails,
+                    hasActiveSubscription,
+                },
                 accessToken,
                 refreshToken,
             },

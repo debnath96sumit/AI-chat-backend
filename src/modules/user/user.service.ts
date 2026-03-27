@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import { ChangePasswordDTO, UpdateProfileApiDTO } from './dto/user.dto';
 import { ConfigService } from '@nestjs/config';
 import { MediaRepository } from '@modules/media/repositories';
-import { existsSync, unlinkSync } from 'fs';
+import { existsSync, unlinkSync } from 'node:fs';
 import { SubscriptionRepository } from '@modules/subscription/repositories/subscription.repository';
 
 @Injectable()
@@ -143,10 +143,15 @@ export class UserService {
                 userData._id,
             );
 
+            const hasActiveSubscription = await this.subscriptionRepository.hasActiveSubscription(userData._id.toString());
+
             return {
                 statusCode: updateUser ? HttpStatus.OK : HttpStatus.BAD_REQUEST,
                 message: updateUser ? "Profile updated successfully!" : "Unable to update profile at this moment.",
-                data: updateUser ?? {},
+                data: updateUser ? {
+                    ...updateUser,
+                    hasActiveSubscription,
+                } : {},
             };
         }
 

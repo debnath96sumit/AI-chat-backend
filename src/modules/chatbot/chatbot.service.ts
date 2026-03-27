@@ -13,6 +13,7 @@ import { FileExtractionService } from './file-extraction.service';
 import { Types } from 'mongoose';
 import { UsageService } from '@modules/usage/usage.service';
 import { SubscriptionService } from '@modules/subscription/subscription.service';
+import { SubscriptionTier } from '@common/enum/subscription-tier.enum';
 @Injectable()
 export class ChatbotService {
 
@@ -32,7 +33,7 @@ export class ChatbotService {
   ): Promise<ApiResponse> {
     const tier = await this.subscriptionService.getUserTier(user._id.toString());
     const FREE_PROVIDER = "groq";
-    if (tier === "free" && dto.provider !== FREE_PROVIDER) {
+    if (tier === SubscriptionTier.FREE && dto.provider !== FREE_PROVIDER) {
       throw new ForbiddenException("Upgrade to Pro to access all models.");
     }
 
@@ -205,7 +206,7 @@ export class ChatbotService {
     const chats = await this.chatRepository.getAllPaginate({
       filter: { userId },
       page,
-      limit: tier === "free" ? 10 : limit,
+      limit: tier === SubscriptionTier.FREE ? 10 : limit,
     });
 
     return {

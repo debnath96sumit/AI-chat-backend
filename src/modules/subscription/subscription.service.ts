@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Types } from 'mongoose';
 import { MailerService } from '@helpers/mailer.helper';
+import { SubscriptionTier } from '@common/enum/subscription-tier.enum';
 
 @Injectable()
 export class SubscriptionService {
@@ -54,7 +55,6 @@ export class SubscriptionService {
         const subscription = await this.subscriptionRepository.getByField({
             userId: user._id,
             status: { $in: ["active", "trialing", "past_due"] },
-            isDeleted: false,
         });
 
         if (!subscription) {
@@ -127,12 +127,12 @@ export class SubscriptionService {
         };
     }
 
-    async getUserTier(userId: string): Promise<"free" | "pro"> {
+    async getUserTier(userId: string): Promise<SubscriptionTier> {
         const subscription = await this.subscriptionRepository.findActiveSubscription(userId);
-        if (!subscription) return "free";
-        if (subscription.status !== "active") return "free";
-        if (new Date(subscription.currentPeriodEnd) < new Date()) return "free";
-        return "pro";
+        if (!subscription) return SubscriptionTier.FREE;
+        if (subscription.status !== "active") return SubscriptionTier.FREE;
+        if (new Date(subscription.currentPeriodEnd) < new Date()) return SubscriptionTier.FREE;
+        return SubscriptionTier.PRO;
     }
 
     async handleWebhook(event: Stripe.Event): Promise<void> {
