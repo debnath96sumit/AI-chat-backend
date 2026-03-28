@@ -17,6 +17,8 @@ Pairs with the [AI-Chat-Frontend](https://github.com/debnath96sumit/AI-Chat-Fron
 - **Chat Persistence** — Chat sessions and message history stored in MongoDB
 - **Email Templates** — Transactional emails via EJS templates (password reset, welcome, etc.)
 - **Dockerized** — Fully containerized with Docker and Docker Compose
+- **File Processing** - Added file upload support in that chat section
+- **Subscription** - Added subscription tier to manage token usage lmit and file upload limit
 
 ---
 
